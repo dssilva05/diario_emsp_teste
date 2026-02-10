@@ -77,11 +77,11 @@
             <div id="tipoRegistroContainer" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd;">
                 <label style="color: #1d4e89; margin-top: 0;">Tipo de Registro:</label>
                 <select id="selTipoRegistro" onchange="ajustarCamposRegistro()" style="border: 2px solid #ccc;">
-                    <option value="📝 Ocorrência Disciplinar">📝 Ocorrência Disciplinar</option>
-                    <option value="👪 Reunião com a Família">👪 Reunião com a Família</option>
-                    <option value="🏥 Saúde (Doente / Machucou)">🏥 Saúde (Doente / Machucou)</option>
-                    <option value="🧠 Equipe PAS">🧠 Equipe PAS</option>
-                    <option value="📎 Outros Atendimentos">📎 Outros Atendimentos</option>
+                    <option value="OCORRENCIA">📝 Ocorrência Disciplinar</option>
+                    <option value="REUNIAO">👪 Reunião com a Família</option>
+                    <option value="SAUDE">🏥 Saúde (Doente / Machucou)</option>
+                    <option value="PAS">🧠 Equipe PAS (Psicologia)</option>
+                    <option value="OUTRO">📎 Outros Atendimentos</option>
                 </select>
             </div>
 
@@ -219,7 +219,7 @@
     function aplicarLogin(d) {
         profNomeLogado = d.nome;
         disciplinaLogada = d.disciplina;
-        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora", "psicólogo", "psicóloga", "assistente social" ];
+        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora"];
         const eGestor = cargosGestores.some(c => d.cargo.toLowerCase().includes(c) || d.disciplina.toLowerCase().includes(c));
         cargoLogado = eGestor ? "Diretor" : "Professor";
         document.getElementById('secaoAcesso').classList.add('hidden');
@@ -229,12 +229,14 @@
         const selTipo = document.getElementById('selTipoRegistro');
         const containerTipo = document.getElementById('tipoRegistroContainer');
         
+        // PADRÃO: SEMPRE COMEÇA EM OCORRÊNCIA
+        selTipo.value = "OCORRENCIA";
+
         if(cargoLogado === "Diretor") {
             selTipo.disabled = false;
             containerTipo.style.background = "#e3f2fd";
             containerTipo.style.borderColor = "#1976d2";
         } else {
-            selTipo.value = "OCORRENCIA";
             selTipo.disabled = true;
             containerTipo.style.background = "#f8f9fa";
             containerTipo.style.borderColor = "#ddd";
@@ -410,8 +412,10 @@
     function limparForm() {
         document.getElementById('relatoTexto').value = ""; document.getElementById('chkAdvertencia').checked = false;
         document.getElementById('containerTratativa').innerHTML = ""; idEditando = null;
+        
         const selTipo = document.getElementById('selTipoRegistro');
-        selTipo.value = "OCORRENCIA";
+        selTipo.value = "OCORRENCIA"; // GARANTE QUE VOLTE PARA OCORRÊNCIA
+        
         ajustarCamposRegistro();
         document.getElementById('btnGravar').innerText = "Gravar no Diário"; document.getElementById('btnGravar').style.background = "";
         definirDataHoje();
