@@ -10,16 +10,11 @@
     <style>
         :root { --blue: #0d47a1; --gold: #ffd600; --glass: rgba(255, 255, 255, 0.95); }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80') center/cover fixed; min-height: 100vh; }
+        
+        /* LOGO CIRCULAR */
         header { background: var(--blue); color: white; padding: 15px 3%; display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .img-topo { 
-    width: 80px; 
-    height: 80px; 
-    object-fit: contain; 
-    background: white; 
-    border-radius: 50%; /* Faz o fundo ficar circular */
-    padding: 10px;      /* Espaço para a logo não encostar na borda branca */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Sombra leve para dar profundidade */
-}
+        .img-topo { width: 80px; height: 80px; object-fit: contain; background: white; border-radius: 50%; padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        
         .escola-txt { text-align: center; flex-grow: 1; padding: 0 15px; }
         .escola-txt h1 { margin: 0; font-size: 20px; text-transform: uppercase; }
         .escola-txt p { margin: 5px 0 0; font-size: 12px; opacity: 0.9; line-height: 1.4; }
@@ -42,7 +37,7 @@
         .filtro-item input { width: 18px; height: 18px; margin-right: 10px; }
         .btn-ajuda-fixo { position: fixed; bottom: 20px; right: 20px; background: #25d366; color: white; padding: 10px 20px; border-radius: 30px; border: none; font-weight: bold; z-index: 9999; cursor: pointer; }
         .modal-ajuda { position: fixed; bottom: 90px; right: 20px; width: 280px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; }
-        @media print { .tabs, .btn-main, label, select, .box-auth, button, .btn-link, .btn-ajuda-fixo, .modal-ajuda, .filtro-box { display: none !important; } header { display: flex !important; color: black !important; background: white !important; border-bottom: 2px solid #000 !important; } }
+        @media print { .tabs, .btn-main, label, select, .box-auth, button, .btn-link, .btn-ajuda-fixo, .modal-ajuda, .filtro-box { display: none !important; } header { display: flex !important; color: black !important; background: white !important; border-bottom: 2px solid #000 !important; } .card { background: white !important; box-shadow: none !important; } }
     </style>
 </head>
 <body>
@@ -66,7 +61,6 @@
 
     <div id="telaRecuperar" class="box-auth hidden">
         <h2 style="color:var(--blue)">🔑 Recuperar Senha</h2>
-        <p style="font-size:12px; color:#666;">Informe seu nome completo e BM cadastrados para definir uma nova senha.</p>
         <input type="text" id="recNome" placeholder="Nome Completo">
         <input type="text" id="recBM" placeholder="BM (apenas números)">
         <input type="password" id="recNovaPass" placeholder="Nova Senha">
@@ -86,11 +80,11 @@
             <div id="tipoRegistroContainer" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd;">
                 <label style="color: #1d4e89; margin-top: 0;">Tipo de Registro:</label>
                 <select id="selTipoRegistro" onchange="ajustarCamposRegistro()" style="border: 2px solid #ccc;">
-                    <option value="OCORRENCIA">📝 Ocorrência Disciplinar</option>
-                    <option value="REUNIAO">👪 Reunião com a Família</option>
-                    <option value="SAUDE">🏥 Saúde (Doente / Machucou)</option>
-                    <option value="PAS">🧠 Equipe PAS (Psicologia)</option>
-                    <option value="OUTRO">📎 Outros Atendimentos</option>
+                    <option value="📝 Ocorrência Disciplinar">📝 Ocorrência Disciplinar</option>
+                    <option value="👪 Reunião com a Família">👪 Reunião com a Família</option>
+                    <option value="🏥 Saúde (Doente / Machucou)">🏥 Saúde (Doente / Machucou)</option>
+                    <option value="🧠 Equipe PAS">🧠 Equipe PAS</option>
+                    <option value="📎 Outros Atendimentos">📎 Outros Atendimentos</option>
                 </select>
             </div>
 
@@ -168,7 +162,6 @@
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // FUNÇÃO PARA REMOVER ACENTOS E NORMALIZAR TEXTO
     function normalizarTexto(txt) {
         return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
     }
@@ -177,25 +170,15 @@
         const nome = normalizarTexto(document.getElementById('recNome').value);
         const bm = document.getElementById('recBM').value.replace(/\D/g, '');
         const novaSenha = document.getElementById('recNovaPass').value;
-
         if(!nome || !bm || !novaSenha) return alert("Preencha todos os campos!");
-
         const p = new URLSearchParams();
-        p.append('acao', 'recuperarSenha'); 
-        p.append('nome', nome); 
-        p.append('bm', bm);
-        p.append('novaSenha', novaSenha);
-
+        p.append('acao', 'recuperarSenha'); p.append('nome', nome); p.append('bm', bm); p.append('novaSenha', novaSenha);
         try {
             const res = await fetch(SCRIPT_URL, { method: 'POST', body: p });
             const d = await res.json();
-            if(d.status === "Sucesso") {
-                alert("Senha alterada com sucesso!");
-                irPara('telaLogin');
-            } else {
-                alert("Dados não conferem. Verifique o nome e o BM.");
-            }
-        } catch (e) { alert("Erro na conexão."); }
+            if(d.status === "Sucesso") { alert("Senha alterada!"); irPara('telaLogin'); }
+            else alert("Dados incorretos.");
+        } catch (e) { alert("Erro de conexão."); }
     }
 
     function alternarCheckboxes(quem) {
@@ -247,25 +230,32 @@
     function aplicarLogin(d) {
         profNomeLogado = d.nome;
         disciplinaLogada = d.disciplina;
-        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora", "PAS", "COORDENADORA P. GERAL", "COORDENADOR P. GERAL"];
-        const eGestor = cargosGestores.some(c => d.cargo.toLowerCase().includes(c) || d.disciplina.toLowerCase().includes(c));
+        const cargoLCase = d.cargo.toLowerCase();
+        const discLCase = d.disciplina.toLowerCase();
+        
+        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora", "pas", "coordenadora p. geral", "coordenador p. geral"];
+        const eGestor = cargosGestores.some(c => cargoLCase.includes(c) || discLCase.includes(c));
         cargoLogado = eGestor ? "Diretor" : "Professor";
+        
         document.getElementById('secaoAcesso').classList.add('hidden');
         document.getElementById('conteudoDiario').classList.remove('hidden');
         document.getElementById('nomeProfLogado').value = profNomeLogado;
         
         const selTipo = document.getElementById('selTipoRegistro');
         const containerTipo = document.getElementById('tipoRegistroContainer');
-        selTipo.value = "OCORRENCIA";
 
-        if(cargoLogado === "Diretor") {
+        if (cargoLCase.includes("pas") || discLCase.includes("pas")) {
+            selTipo.value = "PAS";
+            selTipo.disabled = true;
+            containerTipo.style.background = "#fff3e0";
+        } else if (cargoLogado === "Diretor") {
+            selTipo.value = "📝 Ocorrência Disciplinar";
             selTipo.disabled = false;
             containerTipo.style.background = "#e3f2fd";
-            containerTipo.style.borderColor = "#1976d2";
         } else {
+            selTipo.value = "📝 Ocorrência Disciplinar";
             selTipo.disabled = true;
             containerTipo.style.background = "#f8f9fa";
-            containerTipo.style.borderColor = "#ddd";
         }
         ajustarCamposRegistro();
         definirDataHoje();
@@ -275,7 +265,7 @@
         const tipo = document.getElementById('selTipoRegistro').value;
         const label = document.getElementById('labelRelato');
         const boxAdv = document.getElementById('boxAdvertencia');
-        if(tipo === "OCORRENCIA") {
+        if(tipo === "📝 Ocorrência Disciplinar") {
             label.innerText = "Relato do Professor:";
             boxAdv.classList.remove('hidden');
         } else {
@@ -288,17 +278,14 @@
         const dVal = document.getElementById('dataOcorrenciaManual').value;
         if(!dVal) return alert("Selecione a data!");
         const dFormat = dVal.split("-").reverse().join("/");
-        
         const tipo = document.getElementById('selTipoRegistro').value;
         let prefixo = `[${tipo}] `;
-
         const selT = document.getElementById('selTratativa');
         let textoTratativa = selT ? selT.value : "";
         const dtC = document.getElementById('dataConvocacao');
         if (textoTratativa === "Família Convocada" && dtC && dtC.value) {
             textoTratativa += ` (Data: ${dtC.value.split("-").reverse().join("/")})`;
         }
-        
         const rGestao = document.getElementById('relatoGestaoTexto');
 
         const dados = {
@@ -319,19 +306,8 @@
         } else {
             let fila = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
             fila.push(dados); localStorage.setItem('filaOfflineSobral', JSON.stringify(fila));
-            alert("Offline: Registro salvo no celular."); limparForm();
+            alert("Offline: Registro salvo."); limparForm();
         }
-    }
-
-    async function sincronizarDados() {
-        let fila = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
-        if (fila.length === 0) return;
-        for (let item of fila) {
-            const p = new URLSearchParams();
-            for (let key in item) p.append(key, item[key]);
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
-        }
-        localStorage.removeItem('filaOfflineSobral');
     }
 
     async function consultarHistorico() {
@@ -401,7 +377,6 @@
         atualizarAlunos('selTurma', 'selAluno');
         setTimeout(() => document.getElementById('selAluno').value = aluno, 150);
         document.getElementById('relatoTexto').value = texto;
-        
         const cont = document.getElementById('containerTratativa');
         if (cargoLogado === "Diretor") {
             let opcaoSalva = tratativa;
@@ -427,7 +402,6 @@
             if(focarTratativa) setTimeout(() => document.getElementById('selTratativa').focus(), 300);
         }
         document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
-        document.getElementById('btnGravar').style.background = focarTratativa ? "#1976d2" : "orange";
     }
 
     function verificarDataConvocacao() {
@@ -438,9 +412,9 @@
     function limparForm() {
         document.getElementById('relatoTexto').value = ""; document.getElementById('chkAdvertencia').checked = false;
         document.getElementById('containerTratativa').innerHTML = ""; idEditando = null;
-        const selTipo = document.getElementById('selTipoRegistro');
-        selTipo.value = "OCORRENCIA";
-        ajustarCamposRegistro();
+        // RESETAR AO LOGIN PARA TRAVAS ORIGINAIS
+        const salvo = localStorage.getItem('diarioAcessoSobral');
+        if (salvo) aplicarLogin(JSON.parse(salvo));
         document.getElementById('btnGravar').innerText = "Gravar no Diário"; document.getElementById('btnGravar').style.background = "";
         definirDataHoje();
     }
@@ -470,4 +444,3 @@
 
 </body>
 </html>
-
