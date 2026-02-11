@@ -218,39 +218,52 @@
     }
 
     function aplicarLogin(d) {
-        profNomeLogado = d.nome;
-        disciplinaLogada = d.disciplina;
-        const cargoLCase = d.cargo.toLowerCase();
-        const discLCase = d.disciplina.toLowerCase();
-        
-        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora", "pas"];
-        const eGestor = cargosGestores.some(c => cargoLCase.includes(c) || discLCase.includes(c));
-        cargoLogado = eGestor ? "Diretor" : "Professor";
-        
-        document.getElementById('secaoAcesso').classList.add('hidden');
-        document.getElementById('conteudoDiario').classList.remove('hidden');
-        document.getElementById('nomeProfLogado').value = profNomeLogado;
-        
-        const selTipo = document.getElementById('selTipoRegistro');
-        const containerTipo = document.getElementById('tipoRegistroContainer');
+    profNomeLogado = d.nome;
+    disciplinaLogada = d.disciplina;
+    
+    // Pegamos os valores originais da planilha
+    const cargoPlanilha = String(d.cargo).trim();
+    const discPlanilha = String(d.disciplina).trim();
+    
+    // Lista de cargos que abrem o modo GESTÃO total (Diretor/Coordenador)
+    const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora"];
+    const eGestorTotal = cargosGestores.some(c => cargoPlanilha.toLowerCase().includes(c));
 
-        if (cargoLCase.includes("pas") || discLCase.includes("pas")) {
-            // FIXA O TEXTO EXATO DA OPÇÃO PARA NÃO FICAR EM BRANCO
-            selTipo.value = "🧠 Equipe PAS";
-            selTipo.disabled = true;
-            containerTipo.style.background = "#fff3e0";
-        } else if (cargoLogado === "Diretor") {
-            selTipo.value = "📝 Ocorrência Disciplinar";
-            selTipo.disabled = false;
-            containerTipo.style.background = "#e3f2fd";
-        } else {
-            selTipo.value = "📝 Ocorrência Disciplinar";
-            selTipo.disabled = true;
-            containerTipo.style.background = "#f8f9fa";
-        }
-        ajustarCamposRegistro();
-        definirDataHoje();
+    document.getElementById('secaoAcesso').classList.add('hidden');
+    document.getElementById('conteudoDiario').classList.remove('hidden');
+    document.getElementById('nomeProfLogado').value = profNomeLogado;
+    
+    const selTipo = document.getElementById('selTipoRegistro');
+    const containerTipo = document.getElementById('tipoRegistroContainer');
+
+    // REGRA PARA EQUIPE PAS (Baseado no seu cargo na planilha: PAS)
+    if (cargoPlanilha === "PAS" || discPlanilha === "PAS") {
+        cargoLogado = "Diretor"; // PAS tem permissão de gestão (ver tratar/excluir)
+        selTipo.value = "🧠 Equipe PAS"; // Seleciona a opção correta no HTML
+        selTipo.disabled = true; // Trava para não mudar
+        containerTipo.style.background = "#fff3e0"; // Cor diferenciada (Laranja claro)
+        containerTipo.style.borderColor = "#ff9800";
+    } 
+    // REGRA PARA GESTÃO TOTAL (DIREÇÃO/COORDENAÇÃO)
+    else if (eGestorTotal) {
+        cargoLogado = "Diretor";
+        selTipo.value = "📝 Ocorrência Disciplinar";
+        selTipo.disabled = false; // Pode escolher qualquer um
+        containerTipo.style.background = "#e3f2fd";
+        containerTipo.style.borderColor = "#1976d2";
+    } 
+    // REGRA PARA PROFESSORES
+    else {
+        cargoLogado = "Professor";
+        selTipo.value = "📝 Ocorrência Disciplinar";
+        selTipo.disabled = true; // Travado em Ocorrência
+        containerTipo.style.background = "#f8f9fa";
+        containerTipo.style.borderColor = "#ddd";
     }
+    
+    ajustarCamposRegistro();
+    definirDataHoje();
+}
 
     function ajustarCamposRegistro() {
         const tipo = document.getElementById('selTipoRegistro').value;
@@ -433,3 +446,4 @@
 
 </body>
 </html>
+
