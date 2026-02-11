@@ -53,15 +53,16 @@
         <input type="text" id="userLogin" placeholder="Usuário">
         <input type="password" id="passLogin" placeholder="Senha">
         <button class="btn-main" onclick="executarLogin()">Entrar</button>
-        <button class="btn-link" onclick="irPara('telaCadastro')">Primeiro Acesso / Recuperar</button>
+        <button class="btn-link" onclick="irPara('telaRecuperar')">Esqueci minha Senha / Alterar</button>
     </div>
-    <div id="telaCadastro" class="box-auth hidden">
-        <h2 style="color:var(--blue)">📝 Cadastro</h2>
-        <input type="text" id="cadCpf" placeholder="CPF (apenas números)">
-        <input type="text" id="cadNasc" placeholder="Nascimento (DD/MM/AAAA)">
-        <input type="text" id="cadUser" placeholder="Defina seu Usuário">
-        <input type="password" id="cadPass" placeholder="Defina sua Senha">
-        <button class="btn-main" onclick="executarCadastro()">Validar e Gravar</button>
+
+    <div id="telaRecuperar" class="box-auth hidden">
+        <h2 style="color:var(--blue)">🔑 Recuperar Senha</h2>
+        <p style="font-size:12px; color:#666;">Informe seu nome completo e BM cadastrados para definir uma nova senha.</p>
+        <input type="text" id="recNome" placeholder="Nome Completo">
+        <input type="text" id="recBM" placeholder="BM (apenas números)">
+        <input type="password" id="recNovaPass" placeholder="Nova Senha">
+        <button class="btn-main" onclick="executarRecuperacao()">Alterar Senha</button>
         <button class="btn-link" onclick="irPara('telaLogin')">Voltar ao Login</button>
     </div>
 </div>
@@ -77,11 +78,11 @@
             <div id="tipoRegistroContainer" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd;">
                 <label style="color: #1d4e89; margin-top: 0;">Tipo de Registro:</label>
                 <select id="selTipoRegistro" onchange="ajustarCamposRegistro()" style="border: 2px solid #ccc;">
-                    <option value="📝 Ocorrência Disciplinar">📝 Ocorrência Disciplinar</option>
-                    <option value="👪 Reunião com a Família">👪 Reunião com a Família</option>
-                    <option value="Saúde (Doente / Machucou)">🏥 Saúde (Doente / Machucou)</option>
-                    <option value="🧠 Equipe PAS">🧠 Equipe PAS</option>
-                    <option value="📎 Outros Atendimentos">📎 Outros Atendimentos</option>
+                    <option value="OCORRENCIA">📝 Ocorrência Disciplinar</option>
+                    <option value="REUNIAO">👪 Reunião com a Família</option>
+                    <option value="SAUDE">🏥 Saúde (Doente / Machucou)</option>
+                    <option value="PAS">🧠 Equipe PAS (Psicologia)</option>
+                    <option value="OUTRO">📎 Outros Atendimentos</option>
                 </select>
             </div>
 
@@ -155,19 +156,38 @@
 
     function irPara(id) {
         document.getElementById('telaLogin').classList.add('hidden');
-        document.getElementById('telaCadastro').classList.add('hidden');
+        document.getElementById('telaRecuperar').classList.add('hidden');
         document.getElementById(id).classList.remove('hidden');
     }
 
-    async function executarCadastro() {
-        let cpf = document.getElementById('cadCpf').value.replace(/\D/g, '');
-        let nascRaw = document.getElementById('cadNasc').value;
-        let nasc = nascRaw.includes("-") ? nascRaw.split("-").reverse().join("/") : nascRaw;
+    // FUNÇÃO PARA REMOVER ACENTOS E NORMALIZAR TEXTO
+    function normalizarTexto(txt) {
+        return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    }
+
+    async function executarRecuperacao() {
+        const nome = normalizarTexto(document.getElementById('recNome').value);
+        const bm = document.getElementById('recBM').value.replace(/\D/g, '');
+        const novaSenha = document.getElementById('recNovaPass').value;
+
+        if(!nome || !bm || !novaSenha) return alert("Preencha todos os campos!");
+
         const p = new URLSearchParams();
-        p.append('acao', 'cadastrar'); p.append('cpf', cpf); p.append('nascimento', nasc);
-        p.append('usuario', document.getElementById('cadUser').value); p.append('senha', document.getElementById('cadPass').value);
-        await fetch(SCRIPT_URL, { method: 'POST', body: p });
-        alert("Cadastro processado! Tente fazer login."); irPara('telaLogin');
+        p.append('acao', 'recuperarSenha'); 
+        p.append('nome', nome); 
+        p.append('bm', bm);
+        p.append('novaSenha', novaSenha);
+
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: p });
+            const d = await res.json();
+            if(d.status === "Sucesso") {
+                alert("Senha alterada com sucesso!");
+                irPara('telaLogin');
+            } else {
+                alert("Dados não conferem. Verifique o nome e o BM.");
+            }
+        } catch (e) { alert("Erro na conexão."); }
     }
 
     function alternarCheckboxes(quem) {
@@ -228,9 +248,7 @@
         
         const selTipo = document.getElementById('selTipoRegistro');
         const containerTipo = document.getElementById('tipoRegistroContainer');
-        
-        // PADRÃO: SEMPRE COMEÇA EM OCORRÊNCIA
-        selTipo.value = "📝 Ocorrência Disciplinar";
+        selTipo.value = "OCORRENCIA";
 
         if(cargoLogado === "Diretor") {
             selTipo.disabled = false;
@@ -249,7 +267,7 @@
         const tipo = document.getElementById('selTipoRegistro').value;
         const label = document.getElementById('labelRelato');
         const boxAdv = document.getElementById('boxAdvertencia');
-        if(tipo === "📝 Ocorrência Disciplinar") {
+        if(tipo === "OCORRENCIA") {
             label.innerText = "Relato do Professor:";
             boxAdv.classList.remove('hidden');
         } else {
@@ -412,10 +430,8 @@
     function limparForm() {
         document.getElementById('relatoTexto').value = ""; document.getElementById('chkAdvertencia').checked = false;
         document.getElementById('containerTratativa').innerHTML = ""; idEditando = null;
-        
         const selTipo = document.getElementById('selTipoRegistro');
-        selTipo.value = "📝 Ocorrência Disciplinar"; // GARANTE QUE VOLTE PARA OCORRÊNCIA
-        
+        selTipo.value = "OCORRENCIA";
         ajustarCamposRegistro();
         document.getElementById('btnGravar').innerText = "Gravar no Diário"; document.getElementById('btnGravar').style.background = "";
         definirDataHoje();
@@ -446,6 +462,3 @@
 
 </body>
 </html>
-
-
-
