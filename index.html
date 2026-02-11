@@ -219,7 +219,7 @@
     function aplicarLogin(d) {
         profNomeLogado = d.nome;
         disciplinaLogada = d.disciplina;
-        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora"];
+        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora", "PAS"];
         const eGestor = cargosGestores.some(c => d.cargo.toLowerCase().includes(c) || d.disciplina.toLowerCase().includes(c));
         cargoLogado = eGestor ? "Diretor" : "Professor";
         document.getElementById('secaoAcesso').classList.add('hidden');
@@ -446,4 +446,5 @@
 
 </body>
 </html>
+
 
