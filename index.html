@@ -10,9 +10,9 @@
     <style>
         :root { --blue: #0d47a1; --gold: #ffd600; --glass: rgba(255, 255, 255, 0.95); }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80') center/cover fixed; min-height: 100vh; }
+        header { background: var(--blue); color: white; padding: 15px 3%; display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
         /* LOGO CIRCULAR */
-        header { background: var(--blue); color: white; padding: 15px 3%; display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .img-topo { width: 80px; height: 80px; object-fit: contain; background: white; border-radius: 50%; padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
         
         .escola-txt { text-align: center; flex-grow: 1; padding: 0 15px; }
@@ -82,7 +82,7 @@
                 <select id="selTipoRegistro" onchange="ajustarCamposRegistro()" style="border: 2px solid #ccc;">
                     <option value="📝 Ocorrência Disciplinar">📝 Ocorrência Disciplinar</option>
                     <option value="👪 Reunião com a Família">👪 Reunião com a Família</option>
-                    <option value="🏥 Saúde (Doente / Machucou)">🏥 Saúde (Doente / Machucou)</option>
+                    <option value="Saúde (Doente / Machucou)">🏥 Saúde (Doente / Machucou)</option>
                     <option value="🧠 Equipe PAS">🧠 Equipe PAS</option>
                     <option value="📎 Outros Atendimentos">📎 Outros Atendimentos</option>
                 </select>
@@ -106,9 +106,7 @@
 
             <label id="labelRelato">Relato do Professor:</label>
             <textarea id="relatoTexto" rows="5"></textarea>
-
             <div id="containerTratativa"></div>
-
             <button class="btn-main" id="btnGravar" onclick="gravarOcorrencia()">Gravar no Diário</button>
         </div>
 
@@ -121,18 +119,10 @@
                 <option value="2º Trimestre">2º Trimestre</option>
                 <option value="3º Trimestre">3º Trimestre</option>
             </select>
-
             <div class="filtro-box">
-                <label class="filtro-item">
-                    <input type="checkbox" id="chkMeusRegistros" checked onclick="alternarCheckboxes('meu')"> 
-                    Ver apenas meus registros
-                </label>
-                <label class="filtro-item">
-                    <input type="checkbox" id="chkTodosRegistros" onclick="alternarCheckboxes('todos')"> 
-                    Ver todas as ocorrências
-                </label>
+                <label class="filtro-item"><input type="checkbox" id="chkMeusRegistros" checked onclick="alternarCheckboxes('meu')"> Ver apenas meus registros</label>
+                <label class="filtro-item"><input type="checkbox" id="chkTodosRegistros" onclick="alternarCheckboxes('todos')"> Ver todas as ocorrências</label>
             </div>
-
             <button class="btn-main" onclick="consultarHistorico()">🔍 Buscar Histórico</button>
             <div id="resConsulta"></div>
             <button class="btn-main" id="btnImp" style="background:#444; display:none; margin-top:20px" onclick="window.print()">🖨️ PDF / Imprimir</button>
@@ -233,7 +223,7 @@
         const cargoLCase = d.cargo.toLowerCase();
         const discLCase = d.disciplina.toLowerCase();
         
-        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora", "pas", "coordenadora p. geral", "coordenador p. geral"];
+        const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora", "pas"];
         const eGestor = cargosGestores.some(c => cargoLCase.includes(c) || discLCase.includes(c));
         cargoLogado = eGestor ? "Diretor" : "Professor";
         
@@ -245,7 +235,8 @@
         const containerTipo = document.getElementById('tipoRegistroContainer');
 
         if (cargoLCase.includes("pas") || discLCase.includes("pas")) {
-            selTipo.value = "PAS";
+            // FIXA O TEXTO EXATO DA OPÇÃO PARA NÃO FICAR EM BRANCO
+            selTipo.value = "🧠 Equipe PAS";
             selTipo.disabled = true;
             containerTipo.style.background = "#fff3e0";
         } else if (cargoLogado === "Diretor") {
@@ -335,7 +326,6 @@
             filtrados = filtrados.filter(r => String(r[2]).includes(meuNome));
         }
         if (filtrados.length === 0) { rDiv.innerHTML = "<p>Nada encontrado.</p>"; return; }
-        
         let html = `<h3>Histórico: ${a}</h3>`;
         let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
         filtrados.forEach(r => {
@@ -412,7 +402,6 @@
     function limparForm() {
         document.getElementById('relatoTexto').value = ""; document.getElementById('chkAdvertencia').checked = false;
         document.getElementById('containerTratativa').innerHTML = ""; idEditando = null;
-        // RESETAR AO LOGIN PARA TRAVAS ORIGINAIS
         const salvo = localStorage.getItem('diarioAcessoSobral');
         if (salvo) aplicarLogin(JSON.parse(salvo));
         document.getElementById('btnGravar').innerText = "Gravar no Diário"; document.getElementById('btnGravar').style.background = "";
