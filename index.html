@@ -133,7 +133,20 @@
 
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then(() => console.log("Motor Offline OK"));
+        navigator.serviceWorker.register('sw.js?v=' + Date.now()).then(reg => {
+            // Verifica se há uma nova versão esperando
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Nova versão encontrada! Avisa o usuário ou recarrega
+                        if (confirm("Nova versão disponível! Deseja atualizar agora para evitar erros?")) {
+                            window.location.reload();
+                        }
+                    }
+                };
+            };
+        });
     }
 
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlVbz3C-bdKUbRvuWx4SrL9eiFdmyRwwZwUYVhi9u8u2df9NSgNRNjsYx7gD5q1qef7g/exec"; 
@@ -485,4 +498,5 @@
 
 </body>
 </html>
+
 
