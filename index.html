@@ -218,52 +218,50 @@
     }
 
     function aplicarLogin(d) {
-    profNomeLogado = d.nome;
-    disciplinaLogada = d.disciplina;
-    
-    // Pegamos os valores originais da planilha
-    const cargoPlanilha = String(d.cargo).trim();
-    const discPlanilha = String(d.disciplina).trim();
-    
-    // Lista de cargos que abrem o modo GESTÃO total (Diretor/Coordenador)
-    const cargosGestores = ["diretor", "diretora", "vice-diretor", "vice-diretora", "coordenador", "coordenadora", "supervisor", "supervisora"];
-    const eGestorTotal = cargosGestores.some(c => cargoPlanilha.toLowerCase().includes(c));
+        profNomeLogado = d.nome;
+        disciplinaLogada = d.disciplina;
+        
+        const cargoPlanilha = String(d.cargo).trim().toUpperCase();
+        const discPlanilha = String(d.disciplina).trim().toUpperCase();
+        
+        const cargosGestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA"];
+        const eGestorTotal = cargosGestores.some(c => cargoPlanilha.includes(c));
 
-    document.getElementById('secaoAcesso').classList.add('hidden');
-    document.getElementById('conteudoDiario').classList.remove('hidden');
-    document.getElementById('nomeProfLogado').value = profNomeLogado;
-    
-    const selTipo = document.getElementById('selTipoRegistro');
-    const containerTipo = document.getElementById('tipoRegistroContainer');
+        document.getElementById('secaoAcesso').classList.add('hidden');
+        document.getElementById('conteudoDiario').classList.remove('hidden');
+        document.getElementById('nomeProfLogado').value = profNomeLogado;
+        
+        const selTipo = document.getElementById('selTipoRegistro');
+        const containerTipo = document.getElementById('tipoRegistroContainer');
 
-    // REGRA PARA EQUIPE PAS (Baseado no seu cargo na planilha: PAS)
-    if (cargoPlanilha === "PAS" || discPlanilha === "PAS") {
-        cargoLogado = "Diretor"; // PAS tem permissão de gestão (ver tratar/excluir)
-        selTipo.value = "🧠 Equipe PAS"; // Seleciona a opção correta no HTML
-        selTipo.disabled = true; // Trava para não mudar
-        containerTipo.style.background = "#fff3e0"; // Cor diferenciada (Laranja claro)
-        containerTipo.style.borderColor = "#ff9800";
-    } 
-    // REGRA PARA GESTÃO TOTAL (DIREÇÃO/COORDENAÇÃO)
-    else if (eGestorTotal) {
-        cargoLogado = "Diretor";
-        selTipo.value = "📝 Ocorrência Disciplinar";
-        selTipo.disabled = false; // Pode escolher qualquer um
-        containerTipo.style.background = "#e3f2fd";
-        containerTipo.style.borderColor = "#1976d2";
-    } 
-    // REGRA PARA PROFESSORES
-    else {
-        cargoLogado = "Professor";
-        selTipo.value = "📝 Ocorrência Disciplinar";
-        selTipo.disabled = true; // Travado em Ocorrência
-        containerTipo.style.background = "#f8f9fa";
-        containerTipo.style.borderColor = "#ddd";
+        // REGRA PARA EQUIPE PAS
+        if (cargoPlanilha === "PAS" || discPlanilha === "PAS") {
+            cargoLogado = "Diretor"; 
+            selTipo.value = "🧠 Equipe PAS"; 
+            selTipo.disabled = false; // AGORA HABILITADO PARA EDITAR
+            containerTipo.style.background = "#fff3e0";
+            containerTipo.style.borderColor = "#ff9800";
+        } 
+        // REGRA PARA GESTÃO TOTAL
+        else if (eGestorTotal) {
+            cargoLogado = "Diretor";
+            selTipo.value = "📝 Ocorrência Disciplinar";
+            selTipo.disabled = false;
+            containerTipo.style.background = "#e3f2fd";
+            containerTipo.style.borderColor = "#1976d2";
+        } 
+        // REGRA PARA PROFESSORES
+        else {
+            cargoLogado = "Professor";
+            selTipo.value = "📝 Ocorrência Disciplinar";
+            selTipo.disabled = true;
+            containerTipo.style.background = "#f8f9fa";
+            containerTipo.style.borderColor = "#ddd";
+        }
+        
+        ajustarCamposRegistro();
+        definirDataHoje();
     }
-    
-    ajustarCamposRegistro();
-    definirDataHoje();
-}
 
     function ajustarCamposRegistro() {
         const tipo = document.getElementById('selTipoRegistro').value;
@@ -279,60 +277,66 @@
     }
 
     async function gravarOcorrencia() {
-    const dVal = document.getElementById('dataOcorrenciaManual').value;
-    if(!dVal) return alert("Selecione a data!");
-    const dFormat = dVal.split("-").reverse().join("/");
-    
-    // Identifica o tipo de registro selecionado
-    const tipo = document.getElementById('selTipoRegistro').value;
-    let prefixoTipo = `[${tipo}] `;
+        const dVal = document.getElementById('dataOcorrenciaManual').value;
+        if(!dVal) return alert("Selecione a data!");
+        const dFormat = dVal.split("-").reverse().join("/");
+        
+        const tipo = document.getElementById('selTipoRegistro').value;
+        let prefixoTipo = `[${tipo}] `;
 
-    // Identifica se é PAS ou Professor para o rótulo inicial
-    const salvo = JSON.parse(localStorage.getItem('diarioAcessoSobral'));
-    const cargoPlanilha = String(salvo.cargo).trim();
-    const discPlanilha = String(salvo.disciplina).trim();
-    
-    // Define o rótulo inicial: PAS: ou Prof:
-    let rotuloUsuario = "Prof:";
-    if (cargoPlanilha === "PAS" || discPlanilha === "PAS") {
-        rotuloUsuario = "PAS:";
+        const salvo = JSON.parse(localStorage.getItem('diarioAcessoSobral'));
+        const cargoPlanilha = String(salvo.cargo).trim().toUpperCase();
+        
+        let rotuloUsuario = "Prof:";
+        if (cargoPlanilha === "PAS") {
+            rotuloUsuario = "PAS:";
+        }
+
+        const selT = document.getElementById('selTratativa');
+        let textoTratativa = selT ? selT.value : "";
+        const dtC = document.getElementById('dataConvocacao');
+        if (textoTratativa === "Família Convocada" && dtC && dtC.value) {
+            textoTratativa += ` (Data: ${dtC.value.split("-").reverse().join("/")})`;
+        }
+        
+        const rGestao = document.getElementById('relatoGestaoTexto');
+
+        const dados = {
+            acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
+            id: idEditando || Date.now(),
+            professor: `${prefixoTipo}${rotuloUsuario} ${profNomeLogado.split(" ")[0]} (${disciplinaLogada})`,
+            dataManual: dFormat, 
+            turma: document.getElementById('selTurma').value,
+            aluno: document.getElementById('selAluno').value, 
+            texto: document.getElementById('relatoTexto').value,
+            advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
+            tratativa: textoTratativa, 
+            relatoGestao: rGestao ? rGestao.value : ""
+        };
+
+        if (navigator.onLine) {
+            const p = new URLSearchParams();
+            for (let key in dados) p.append(key, dados[key]);
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+            alert("Sucesso!"); limparForm();
+        } else {
+            let fila = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
+            fila.push(dados); 
+            localStorage.setItem('filaOfflineSobral', JSON.stringify(fila));
+            alert("Offline: Registro salvo no celular."); limparForm();
+        }
     }
 
-    const selT = document.getElementById('selTratativa');
-    let textoTratativa = selT ? selT.value : "";
-    const dtC = document.getElementById('dataConvocacao');
-    if (textoTratativa === "Família Convocada" && dtC && dtC.value) {
-        textoTratativa += ` (Data: ${dtC.value.split("-").reverse().join("/")})`;
-    }
-    
-    const rGestao = document.getElementById('relatoGestaoTexto');
-
-    const dados = {
-        acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
-        id: idEditando || Date.now(),
-        // AQUI ESTÁ A MUDANÇA: prefixo + rótulo + Nome + (Ocupação/Disciplina)
-        professor: `${prefixoTipo}${rotuloUsuario} ${profNomeLogado.split(" ")[0]} (${disciplinaLogada})`,
-        dataManual: dFormat, 
-        turma: document.getElementById('selTurma').value,
-        aluno: document.getElementById('selAluno').value, 
-        texto: document.getElementById('relatoTexto').value,
-        advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
-        tratativa: textoTratativa, 
-        relatoGestao: rGestao ? rGestao.value : ""
-    };
-
-    if (navigator.onLine) {
-        const p = new URLSearchParams();
-        for (let key in dados) p.append(key, dados[key]);
-        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
-        alert("Sucesso!"); limparForm();
-    } else {
+    async function sincronizarDados() {
         let fila = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
-        fila.push(dados); 
-        localStorage.setItem('filaOfflineSobral', JSON.stringify(fila));
-        alert("Offline: Registro salvo no celular."); limparForm();
+        if (fila.length === 0) return;
+        for (let item of fila) {
+            const p = new URLSearchParams();
+            for (let key in item) p.append(key, item[key]);
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+        }
+        localStorage.removeItem('filaOfflineSobral');
     }
-}
 
     async function consultarHistorico() {
         const t = document.getElementById('selTurmaCons').value, a = document.getElementById('selAlunoCons').value;
@@ -359,6 +363,7 @@
             filtrados = filtrados.filter(r => String(r[2]).includes(meuNome));
         }
         if (filtrados.length === 0) { rDiv.innerHTML = "<p>Nada encontrado.</p>"; return; }
+        
         let html = `<h3>Histórico: ${a}</h3>`;
         let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
         filtrados.forEach(r => {
@@ -466,7 +471,3 @@
 
 </body>
 </html>
-
-
-
-
