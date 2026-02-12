@@ -84,6 +84,7 @@
                     <option value="👪 Reunião com a Família">👪 Reunião com a Família</option>
                     <option value="Saúde (Doente / Machucou)">🏥 Saúde (Doente / Machucou)</option>
                     <option value="🧠 Equipe PAS">🧠 Equipe PAS</option>
+                    <option value="📖 Atendimento AEE">📖 Atendimento AEE</option>
                     <option value="📎 Outros Atendimentos">📎 Outros Atendimentos</option>
                 </select>
             </div>
@@ -350,52 +351,65 @@
     }
 
     function exibirDados(data, t, a, p) {
-        const rDiv = document.getElementById('resConsulta');
-        const vT = document.getElementById('chkTodosRegistros').checked;
-        let filtrados = data.filter(r => r[3] && String(r[3]).trim() === t && String(r[4]).trim() === a);
-        filtrados.sort((m, n) => {
-            const c = (txt) => { const pt = txt.split('/'); return new Date(pt[2], pt[1]-1, pt[0]); };
-            return c(m[1]) - c(n[1]);
-        });
-        if (p !== "Ano Todo") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
-        if (!vT) {
-            const meuNome = profNomeLogado.split(" ")[0];
-            filtrados = filtrados.filter(r => String(r[2]).includes(meuNome));
-        }
-        if (filtrados.length === 0) { rDiv.innerHTML = "<p>Nada encontrado.</p>"; return; }
-        
-        let html = `<h3>Histórico: ${a}</h3>`;
-        let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
-        filtrados.forEach(r => {
-            const tri = identificarTrimestre(r[1]);
-            if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r);
-        });
+    const rDiv = document.getElementById('resConsulta');
+    const vT = document.getElementById('chkTodosRegistros').checked;
+    let filtrados = data.filter(r => r[3] && String(r[3]).trim() === t && String(r[4]).trim() === a);
+    
+    filtrados.sort((m, n) => {
+        const c = (txt) => { const pt = txt.split('/'); return new Date(pt[2], pt[1]-1, pt[0]); };
+        return c(m[1]) - c(n[1]);
+    });
 
-        for (let tri in grupos) {
-            if (grupos[tri].length > 0) {
-                html += `<div class="titulo-trimestre">${tri}</div>`;
-                grupos[tri].forEach(r => {
-                    const souDono = String(r[2]).includes(profNomeLogado.split(" ")[0]);
-                    const souGestor = (cargoLogado === "Diretor");
-                    const adv = (r[6] === "SIM") ? `<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>` : "";
-                    const trat = r[7] ? `<div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; margin-top:10px;"><strong>Ação da Gestão:</strong> ${r[7]}</div>` : "";
-                    const priv = (souGestor && r[8]) ? `<div style="background:#fff3e0; padding:10px; border:1px dashed #ff9800; margin-top:5px; font-size:13px;"><strong>🔒 Relato Privado:</strong> ${r[8]}</div>` : "";
-
-                    html += `<div class="item-ocorrencia">
-                        <div style="float:right; display:flex; gap:5px;">
-                            ${souDono || souGestor ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Editar</button>` : ''}
-                            ${souGestor ? `
-                                <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Tratar</button>
-                                <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
-                            ` : ''}
-                        </div>
-                        <strong>${r[1]} - ${r[2]}</strong><br><br>${r[5]}${adv}${trat}${priv}
-                    </div>`;
-                });
-            }
-        }
-        rDiv.innerHTML = html; document.getElementById('btnImp').style.display = "block";
+    if (p !== "Ano Todo") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
+    if (!vT) {
+        const meuNome = profNomeLogado.split(" ")[0];
+        filtrados = filtrados.filter(r => String(r[2]).includes(meuNome));
     }
+
+    if (filtrados.length === 0) { rDiv.innerHTML = "<p>Nada encontrado.</p>"; return; }
+    
+    let html = `<h3>Histórico: ${a}</h3>`;
+    let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
+    
+    filtrados.forEach(r => {
+        const tri = identificarTrimestre(r[1]);
+        if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r);
+    });
+
+    for (let tri in grupos) {
+        if (grupos[tri].length > 0) {
+            html += `<div class="titulo-trimestre">${tri}</div>`;
+            grupos[tri].forEach(r => {
+                const souDono = String(r[2]).includes(profNomeLogado.split(" ")[0]);
+                const souGestor = (cargoLogado === "Diretor");
+                
+                // LÓGICA DE CORES DIFERENCIADAS
+                let estiloCard = "border-left: 5px solid var(--blue); background: white;";
+                if (String(r[2]).includes("[📖 Atendimento AEE]")) {
+                    estiloCard = "border-left: 5px solid #9c27b0; background: #f3e5f5;"; // Roxo para AEE
+                } else if (String(r[2]).includes("[🧠 Equipe PAS]")) {
+                    estiloCard = "border-left: 5px solid #ff9800; background: #fff3e0;"; // Laranja para PAS
+                }
+
+                const adv = (r[6] === "SIM") ? `<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>` : "";
+                const trat = r[7] ? `<div style="background:rgba(255,255,255,0.5); padding:10px; border-left:4px solid #4caf50; margin-top:10px;"><strong>Ação da Gestão:</strong> ${r[7]}</div>` : "";
+                const priv = (souGestor && r[8]) ? `<div style="background:rgba(255,255,255,0.6); padding:10px; border:1px dashed #ff9800; margin-top:5px; font-size:13px;"><strong>🔒 Relato Privado:</strong> ${r[8]}</div>` : "";
+
+                html += `<div class="item-ocorrencia" style="${estiloCard}">
+                    <div style="float:right; display:flex; gap:5px;">
+                        ${souDono || souGestor ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Editar</button>` : ''}
+                        ${souGestor ? `
+                            <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Tratar</button>
+                            <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
+                        ` : ''}
+                    </div>
+                    <strong>${r[1]} - ${r[2]}</strong><br><br>${r[5]}${adv}${trat}${priv}
+                </div>`;
+            });
+        }
+    }
+    rDiv.innerHTML = html; document.getElementById('btnImp').style.display = "block";
+}
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
         idEditando = id; tab(1);
@@ -471,3 +485,4 @@
 
 </body>
 </html>
+
