@@ -279,40 +279,60 @@
     }
 
     async function gravarOcorrencia() {
-        const dVal = document.getElementById('dataOcorrenciaManual').value;
-        if(!dVal) return alert("Selecione a data!");
-        const dFormat = dVal.split("-").reverse().join("/");
-        const tipo = document.getElementById('selTipoRegistro').value;
-        let prefixo = `[${tipo}] `;
-        const selT = document.getElementById('selTratativa');
-        let textoTratativa = selT ? selT.value : "";
-        const dtC = document.getElementById('dataConvocacao');
-        if (textoTratativa === "Família Convocada" && dtC && dtC.value) {
-            textoTratativa += ` (Data: ${dtC.value.split("-").reverse().join("/")})`;
-        }
-        const rGestao = document.getElementById('relatoGestaoTexto');
+    const dVal = document.getElementById('dataOcorrenciaManual').value;
+    if(!dVal) return alert("Selecione a data!");
+    const dFormat = dVal.split("-").reverse().join("/");
+    
+    // Identifica o tipo de registro selecionado
+    const tipo = document.getElementById('selTipoRegistro').value;
+    let prefixoTipo = `[${tipo}] `;
 
-        const dados = {
-            acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
-            id: idEditando || Date.now(),
-            professor: `${prefixo}Prof: ${profNomeLogado.split(" ")[0]} (${disciplinaLogada})`,
-            dataManual: dFormat, turma: document.getElementById('selTurma').value,
-            aluno: document.getElementById('selAluno').value, texto: document.getElementById('relatoTexto').value,
-            advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
-            tratativa: textoTratativa, relatoGestao: rGestao ? rGestao.value : ""
-        };
-
-        if (navigator.onLine) {
-            const p = new URLSearchParams();
-            for (let key in dados) p.append(key, dados[key]);
-            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
-            alert("Sucesso!"); limparForm();
-        } else {
-            let fila = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
-            fila.push(dados); localStorage.setItem('filaOfflineSobral', JSON.stringify(fila));
-            alert("Offline: Registro salvo."); limparForm();
-        }
+    // Identifica se é PAS ou Professor para o rótulo inicial
+    const salvo = JSON.parse(localStorage.getItem('diarioAcessoSobral'));
+    const cargoPlanilha = String(salvo.cargo).trim();
+    const discPlanilha = String(salvo.disciplina).trim();
+    
+    // Define o rótulo inicial: PAS: ou Prof:
+    let rotuloUsuario = "Prof:";
+    if (cargoPlanilha === "PAS" || discPlanilha === "PAS") {
+        rotuloUsuario = "PAS:";
     }
+
+    const selT = document.getElementById('selTratativa');
+    let textoTratativa = selT ? selT.value : "";
+    const dtC = document.getElementById('dataConvocacao');
+    if (textoTratativa === "Família Convocada" && dtC && dtC.value) {
+        textoTratativa += ` (Data: ${dtC.value.split("-").reverse().join("/")})`;
+    }
+    
+    const rGestao = document.getElementById('relatoGestaoTexto');
+
+    const dados = {
+        acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
+        id: idEditando || Date.now(),
+        // AQUI ESTÁ A MUDANÇA: prefixo + rótulo + Nome + (Ocupação/Disciplina)
+        professor: `${prefixoTipo}${rotuloUsuario} ${profNomeLogado.split(" ")[0]} (${disciplinaLogada})`,
+        dataManual: dFormat, 
+        turma: document.getElementById('selTurma').value,
+        aluno: document.getElementById('selAluno').value, 
+        texto: document.getElementById('relatoTexto').value,
+        advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
+        tratativa: textoTratativa, 
+        relatoGestao: rGestao ? rGestao.value : ""
+    };
+
+    if (navigator.onLine) {
+        const p = new URLSearchParams();
+        for (let key in dados) p.append(key, dados[key]);
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+        alert("Sucesso!"); limparForm();
+    } else {
+        let fila = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
+        fila.push(dados); 
+        localStorage.setItem('filaOfflineSobral', JSON.stringify(fila));
+        alert("Offline: Registro salvo no celular."); limparForm();
+    }
+}
 
     async function consultarHistorico() {
         const t = document.getElementById('selTurmaCons').value, a = document.getElementById('selAlunoCons').value;
@@ -446,6 +466,7 @@
 
 </body>
 </html>
+
 
 
 
