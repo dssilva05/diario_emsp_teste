@@ -154,11 +154,13 @@
     let cargoLogado = "", profNomeLogado = "", disciplinaLogada = "", idEditando = null;
 
     window.onload = function() {
-        const salvo = localStorage.getItem('diarioAcessoSobral');
-        if (salvo) aplicarLogin(JSON.parse(salvo));
-        carregarDadosIniciais();
-        if (navigator.onLine) sincronizarDados();
-    };
+    const salvo = localStorage.getItem('diarioAcessoSobral');
+    if (salvo) {
+        // Se já logou uma vez, o app abre direto na tela de registro
+        aplicarLogin(JSON.parse(salvo));
+    }
+    carregarDadosIniciais();
+};
 
     function irPara(id) {
         document.getElementById('telaLogin').classList.add('hidden');
@@ -194,17 +196,30 @@
     }
 
     async function carregarDadosIniciais() {
-        try {
-            const res = await fetch(`${SCRIPT_URL}?acao=getListaAlunos`);
-            ALUNOS = await res.json();
-            localStorage.setItem('cache_alunos_sobral', JSON.stringify(ALUNOS));
-            popularTurmas();
-        } catch (e) {
-            const cache = localStorage.getItem('cache_alunos_sobral');
-            if (cache) { ALUNOS = JSON.parse(cache); popularTurmas(); }
-        }
+    // 1. Tenta carregar IMEDIATAMENTE o que está no cache local (para ser instantâneo)
+    const cacheAlunos = localStorage.getItem('cache_alunos_sobral');
+    if (cacheAlunos) {
+        ALUNOS = JSON.parse(cacheAlunos);
+        popularTurmas();
+        console.log("Alunos carregados do cache local.");
     }
 
+    // 2. Em segundo plano, tenta buscar a versão mais nova da planilha
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=getListaAlunos`);
+        const novosDados = await res.json();
+        
+        // 3. Verifica se os dados novos são diferentes dos que temos
+        if (JSON.stringify(novosDados) !== cacheAlunos) {
+            ALUNOS = novosDados;
+            localStorage.setItem('cache_alunos_sobral', JSON.stringify(novosDados));
+            popularTurmas();
+            console.log("Lista de alunos atualizada com sucesso!");
+        }
+    } catch (e) {
+        console.log("Sem conexão para atualizar lista de alunos. Usando cache.");
+    }
+}
     function popularTurmas() {
         const selects = [document.getElementById('selTurma'), document.getElementById('selTurmaCons')];
         const turmas = Object.keys(ALUNOS).sort();
@@ -498,5 +513,6 @@
 
 </body>
 </html>
+
 
 
