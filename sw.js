@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sobral-pinto-test-v1'; // Mude esse v1 sempre que atualizar o código
+const CACHE_NAME = 'sobral-pinto-test-v2'; // Mude esse v1 sempre que atualizar o código
 const ASSETS = [
   './',
   './index.html',
