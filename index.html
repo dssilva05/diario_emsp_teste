@@ -237,14 +237,43 @@
     }
 
     async function executarLogin() {
-        const u = document.getElementById('userLogin').value, s = document.getElementById('passLogin').value;
+    const u = document.getElementById('userLogin').value.trim().toLowerCase();
+    const s = document.getElementById('passLogin').value.trim();
+    
+    if(!u || !s) return alert("Preencha usuário e senha.");
+
+    // 1. TENTATIVA ONLINE
+    if (navigator.onLine) {
         try {
             const res = await fetch(`${SCRIPT_URL}?acao=login&usuario=${u}&senha=${s}`);
             const d = await res.json();
-            if(d.status === "Autorizado") { localStorage.setItem('diarioAcessoSobral', JSON.stringify(d)); aplicarLogin(d); }
-            else alert("Acesso negado.");
-        } catch (e) { alert("Erro de conexão."); }
+            
+            if(d.status === "Autorizado") { 
+                // Salva o usuário atual e também uma cópia para conferência offline
+                localStorage.setItem('diarioAcessoSobral', JSON.stringify(d));
+                localStorage.setItem('ultimoUsuarioSucesso', JSON.stringify({u: u, s: s, dados: d})); 
+                aplicarLogin(d); 
+                return;
+            }
+        } catch (e) {
+            console.log("Erro na rede, tentando validação local...");
+        }
     }
+
+    // 2. TENTATIVA OFFLINE (Validação Local)
+    const backup = localStorage.getItem('ultimoUsuarioSucesso');
+    if (backup) {
+        const check = JSON.parse(backup);
+        if (u === check.u && s === check.s) {
+            alert("Modo Offline: Login validado localmente.");
+            aplicarLogin(check.dados);
+        } else {
+            alert("Usuário ou senha não conferem. (Para novos usuários é necessário o primeiro login online)");
+        }
+    } else {
+        alert("Sem conexão. É necessário logar online pelo menos uma vez neste aparelho.");
+    }
+}
 
     function aplicarLogin(d) {
         profNomeLogado = d.nome;
@@ -498,7 +527,11 @@
 
     function tab(n) { document.getElementById('aba1').classList.toggle('hidden', n !== 1); document.getElementById('aba2').classList.toggle('hidden', n !== 2); document.getElementById('t1').classList.toggle('active', n === 1); document.getElementById('t2').classList.toggle('active', n === 2); if(n===2) limparForm(); }
     function definirDataHoje() { document.getElementById('dataOcorrenciaManual').value = new Date().toISOString().split('T')[0]; }
-    function logout() { localStorage.removeItem('diarioAcessoSobral'); location.reload(); }
+    function logout() {
+    // Remove apenas o acesso ativo, mas NÃO apaga o 'ultimoUsuarioSucesso'
+    localStorage.removeItem('diarioAcessoSobral'); 
+    location.reload(); 
+}
     function toggleAjuda() { document.getElementById('caixaAjuda').classList.toggle('hidden'); }
     async function apagarRegistro(id) { if (!confirm("Excluir definitivamente?")) return; const p = new URLSearchParams(); p.append('acao', 'apagarOcorrencia'); p.append('id', id); await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p }); consultarHistorico(); }
     async function enviarWhatsApp() { const msg = `*Suporte Sobral*\n*Dúvida:* ${document.getElementById('textoDuvida').value}`; window.open(`https://api.whatsapp.com/send?phone=5531975580836&text=${encodeURIComponent(msg)}`, '_blank'); }
@@ -513,6 +546,7 @@
 
 </body>
 </html>
+
 
 
 
