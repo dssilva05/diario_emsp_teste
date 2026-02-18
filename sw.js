@@ -1,36 +1,35 @@
-const CACHE_NAME = 'sobral-pinto-v3'; // <--- Sempre que mudar o site, aumente esse número
-const urlsToCache = [
+const CACHE_NAME = 'sobral-pinto-test-v1'; // Mude esse v1 sempre que atualizar o código
+const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80' // Imagem de fundo
 ];
 
+// Instalação: Cacheia os arquivos essenciais
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
-  self.skipWaiting(); // Força o novo SW a assumir o controle imediatamente
+  self.skipWaiting(); 
 });
 
+// Ativação: Deleta caches de versões antigas imediatamente
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName); // Apaga caches antigos
-          }
-        })
-      );
-    })
+    caches.keys().then(keys => Promise.all(
+      keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      })
+    ))
   );
-  return self.clients.claim(); // Assume o controle das abas abertas na hora
+  self.clients.claim();
 });
 
+// Estratégia: Network First (Tenta internet, se falhar, usa cache)
+// Isso evita que o usuário veja a versão velha se ele estiver online
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });
