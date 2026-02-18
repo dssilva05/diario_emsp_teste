@@ -467,7 +467,7 @@
     function logout() { localStorage.removeItem('diarioAcessoSobral'); location.reload(); }
     function toggleAjuda() { document.getElementById('caixaAjuda').classList.toggle('hidden'); }
     async function apagarRegistro(id) { if (!confirm("Excluir definitivamente?")) return; const p = new URLSearchParams(); p.append('acao', 'apagarOcorrencia'); p.append('id', id); await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p }); consultarHistorico(); }
-    async function enviarWhatsApp() { const msg = `*Suporte Sobral*\n*Dúvida:* ${document.getElementById('textoDuvida').value}`; window.open(`https://api.whatsapp.com/send?phone=5531975580836&text=${encodeURIComponent(msg)}`, '_blank'); }
+    async function enviarWhatsApp() { const msg = `*Suporte EMSP*\n*Dúvida:* ${document.getElementById('textoDuvida').value}`; window.open(`https://api.whatsapp.com/send?phone=5531975580836&text=${encodeURIComponent(msg)}`, '_blank'); }
 </script>
 
 <button class="btn-ajuda-fixo" onclick="toggleAjuda()">💡 Dúvidas?</button>
@@ -479,3 +479,4 @@
 
 </body>
 </html>
+
