@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d47a1">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/u/0/d/16JafsMd81Ho26kkaqCI-YTvsCGIXQ2Fy">
     <title>Diário de Bordo - E. M. Sobral Pinto</title>
     <style>
         :root { --blue: #0d47a1; --gold: #ffd600; --glass: rgba(255, 255, 255, 0.95); }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80') center/cover fixed; min-height: 100vh; }
+        
+        /* BARRA DE STATUS OFFLINE */
+        #status-bar { width: 100%; padding: 5px; text-align: center; font-size: 12px; font-weight: bold; color: white; transition: 0.5s; position: sticky; top: 0; z-index: 10000; }
+        .online { background: #4caf50; display: none; }
+        .offline { background: #ff9800; display: block; }
+
         header { background: var(--blue); color: white; padding: 15px 3%; display: flex; align-items: center; justify-content: space-between; border-bottom: 4px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        
-        /* LOGO CIRCULAR */
         .img-topo { width: 80px; height: 80px; object-fit: contain; background: white; border-radius: 50%; padding: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        
         .escola-txt { text-align: center; flex-grow: 1; padding: 0 15px; }
         .escola-txt h1 { margin: 0; font-size: 20px; text-transform: uppercase; }
         .escola-txt p { margin: 5px 0 0; font-size: 12px; opacity: 0.9; line-height: 1.4; }
@@ -37,10 +38,12 @@
         .filtro-item input { width: 18px; height: 18px; margin-right: 10px; }
         .btn-ajuda-fixo { position: fixed; bottom: 20px; right: 20px; background: #25d366; color: white; padding: 10px 20px; border-radius: 30px; border: none; font-weight: bold; z-index: 9999; cursor: pointer; }
         .modal-ajuda { position: fixed; bottom: 90px; right: 20px; width: 280px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; }
-        @media print { .tabs, .btn-main, label, select, .box-auth, button, .btn-link, .btn-ajuda-fixo, .modal-ajuda, .filtro-box { display: none !important; } header { display: flex !important; color: black !important; background: white !important; border-bottom: 2px solid #000 !important; } .card { background: white !important; box-shadow: none !important; } }
+        @media print { #status-bar, .tabs, .btn-main, label, select, .box-auth, button, .btn-link, .btn-ajuda-fixo, .modal-ajuda, .filtro-box { display: none !important; } header { display: flex !important; color: black !important; background: white !important; border-bottom: 2px solid #000 !important; } .card { background: white !important; box-shadow: none !important; } }
     </style>
 </head>
 <body>
+
+<div id="status-bar" class="online">Você está Online</div>
 
 <header>
     <img src="https://lh3.googleusercontent.com/u/0/d/16JafsMd81Ho26kkaqCI-YTvsCGIXQ2Fy" alt="Prefeitura" class="img-topo">
@@ -62,7 +65,7 @@
     <div id="telaRecuperar" class="box-auth hidden">
         <h2 style="color:var(--blue)">🔑 Recuperar Senha</h2>
         <input type="text" id="recNome" placeholder="Nome Completo">
-        <input type="text" id="recBM" placeholder="BM (apenas números e X, se for o caso)">
+        <input type="text" id="recBM" placeholder="BM (apenas números e X)">
         <input type="password" id="recNovaPass" placeholder="Nova Senha">
         <button class="btn-main" onclick="executarRecuperacao()">Alterar Senha</button>
         <button class="btn-link" onclick="irPara('telaLogin')">Voltar ao Login</button>
@@ -132,35 +135,36 @@
 </div>
 
 <script>
+    // --- LÓGICA DE LIMPEZA E MONITORAMENTO DE REDE ---
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js?v=' + Date.now()).then(reg => {
-            // Verifica se há uma nova versão esperando
-            reg.onupdatefound = () => {
-                const installingWorker = reg.installing;
-                installingWorker.onstatechange = () => {
-                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // Nova versão encontrada! Avisa o usuário ou recarrega
-                        if (confirm("Nova versão disponível! Deseja atualizar agora para evitar erros?")) {
-                            window.location.reload();
-                        }
-                    }
-                };
-            };
-        });
+        navigator.serviceWorker.getRegistrations().then(regs => { for(let reg of regs) reg.unregister(); });
     }
+
+    function updateOnlineStatus() {
+        const bar = document.getElementById('status-bar');
+        if (navigator.onLine) {
+            bar.className = 'online';
+            bar.innerText = 'Você está Online';
+            sincronizarDados();
+        } else {
+            bar.className = 'offline';
+            bar.innerText = 'Você está Offline - O uso é limitado ao registro';
+        }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    // ------------------------------------------------
 
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlVbz3C-bdKUbRvuWx4SrL9eiFdmyRwwZwUYVhi9u8u2df9NSgNRNjsYx7gD5q1qef7g/exec"; 
     let ALUNOS = {};
     let cargoLogado = "", profNomeLogado = "", disciplinaLogada = "", idEditando = null;
 
     window.onload = function() {
-    const salvo = localStorage.getItem('diarioAcessoSobral');
-    if (salvo) {
-        // Se já logou uma vez, o app abre direto na tela de registro
-        aplicarLogin(JSON.parse(salvo));
-    }
-    carregarDadosIniciais();
-};
+        updateOnlineStatus();
+        const salvo = localStorage.getItem('diarioAcessoSobral');
+        if (salvo) aplicarLogin(JSON.parse(salvo));
+        carregarDadosIniciais();
+    };
 
     function irPara(id) {
         document.getElementById('telaLogin').classList.add('hidden');
@@ -196,30 +200,27 @@
     }
 
     async function carregarDadosIniciais() {
-    // 1. Tenta carregar IMEDIATAMENTE o que está no cache local (para ser instantâneo)
-    const cacheAlunos = localStorage.getItem('cache_alunos_sobral');
-    if (cacheAlunos) {
-        ALUNOS = JSON.parse(cacheAlunos);
-        popularTurmas();
-        console.log("Alunos carregados do cache local.");
+        // Tenta carregar do cache local primeiro
+        const cache = localStorage.getItem('cache_alunos_sobral');
+        if (cache) {
+            ALUNOS = JSON.parse(cache);
+            popularTurmas();
+        }
+
+        // Se estiver online, atualiza o cache silenciosamente
+        if (navigator.onLine) {
+            try {
+                const res = await fetch(`${SCRIPT_URL}?acao=getListaAlunos`);
+                const novosDados = await res.json();
+                if (JSON.stringify(novosDados) !== cache) {
+                    ALUNOS = novosDados;
+                    localStorage.setItem('cache_alunos_sobral', JSON.stringify(novosDados));
+                    popularTurmas();
+                }
+            } catch (e) { console.log("Erro ao atualizar alunos"); }
+        }
     }
 
-    // 2. Em segundo plano, tenta buscar a versão mais nova da planilha
-    try {
-        const res = await fetch(`${SCRIPT_URL}?acao=getListaAlunos`);
-        const novosDados = await res.json();
-        
-        // 3. Verifica se os dados novos são diferentes dos que temos
-        if (JSON.stringify(novosDados) !== cacheAlunos) {
-            ALUNOS = novosDados;
-            localStorage.setItem('cache_alunos_sobral', JSON.stringify(novosDados));
-            popularTurmas();
-            console.log("Lista de alunos atualizada com sucesso!");
-        }
-    } catch (e) {
-        console.log("Sem conexão para atualizar lista de alunos. Usando cache.");
-    }
-}
     function popularTurmas() {
         const selects = [document.getElementById('selTurma'), document.getElementById('selTurmaCons')];
         const turmas = Object.keys(ALUNOS).sort();
@@ -237,86 +238,60 @@
     }
 
     async function executarLogin() {
-    const u = document.getElementById('userLogin').value.trim().toLowerCase();
-    const s = document.getElementById('passLogin').value.trim();
-    
-    if(!u || !s) return alert("Preencha usuário e senha.");
+        const u = document.getElementById('userLogin').value.trim().toLowerCase();
+        const s = document.getElementById('passLogin').value.trim();
+        if(!u || !s) return alert("Preencha usuário e senha.");
 
-    // 1. TENTATIVA ONLINE
-    if (navigator.onLine) {
-        try {
-            const res = await fetch(`${SCRIPT_URL}?acao=login&usuario=${u}&senha=${s}`);
-            const d = await res.json();
-            
-            if(d.status === "Autorizado") { 
-                // Salva o usuário atual e também uma cópia para conferência offline
-                localStorage.setItem('diarioAcessoSobral', JSON.stringify(d));
-                localStorage.setItem('ultimoUsuarioSucesso', JSON.stringify({u: u, s: s, dados: d})); 
-                aplicarLogin(d); 
-                return;
-            }
-        } catch (e) {
-            console.log("Erro na rede, tentando validação local...");
+        // 1. TENTATIVA ONLINE
+        if (navigator.onLine) {
+            try {
+                const res = await fetch(`${SCRIPT_URL}?acao=login&usuario=${u}&senha=${s}`);
+                const d = await res.json();
+                if(d.status === "Autorizado") { 
+                    localStorage.setItem('diarioAcessoSobral', JSON.stringify(d)); 
+                    localStorage.setItem('ultimoUsuarioSucesso', JSON.stringify({u: u, s: s, dados: d})); 
+                    aplicarLogin(d); 
+                    return;
+                }
+            } catch (e) { console.log("Tentando login local..."); }
         }
-    }
 
-    // 2. TENTATIVA OFFLINE (Validação Local)
-    const backup = localStorage.getItem('ultimoUsuarioSucesso');
-    if (backup) {
-        const check = JSON.parse(backup);
-        if (u === check.u && s === check.s) {
-            alert("Modo Offline: Login validado localmente.");
-            aplicarLogin(check.dados);
-        } else {
-            alert("Usuário ou senha não conferem. (Para novos usuários é necessário o primeiro login online)");
-        }
-    } else {
-        alert("Sem conexão. É necessário logar online pelo menos uma vez neste aparelho.");
+        // 2. TENTATIVA OFFLINE
+        const backup = localStorage.getItem('ultimoUsuarioSucesso');
+        if (backup) {
+            const check = JSON.parse(backup);
+            if (u === check.u && s === check.s) {
+                alert("Login validado offline.");
+                aplicarLogin(check.dados);
+            } else alert("Usuário ou senha incorretos ou não validados online neste aparelho.");
+        } else alert("Sem conexão. É necessário logar online uma vez neste aparelho.");
     }
-}
 
     function aplicarLogin(d) {
         profNomeLogado = d.nome;
         disciplinaLogada = d.disciplina;
-        
         const cargoPlanilha = String(d.cargo).trim().toUpperCase();
-        const discPlanilha = String(d.disciplina).trim().toUpperCase();
-        
-        const cargosGestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA"];
+        const cargosGestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA", "PAS"];
         const eGestorTotal = cargosGestores.some(c => cargoPlanilha.includes(c));
-
+        cargoLogado = eGestorTotal ? "Diretor" : "Professor";
         document.getElementById('secaoAcesso').classList.add('hidden');
         document.getElementById('conteudoDiario').classList.remove('hidden');
         document.getElementById('nomeProfLogado').value = profNomeLogado;
-        
         const selTipo = document.getElementById('selTipoRegistro');
         const containerTipo = document.getElementById('tipoRegistroContainer');
-
-        // REGRA PARA EQUIPE PAS
-        if (cargoPlanilha === "PAS" || discPlanilha === "PAS") {
-            cargoLogado = "Diretor"; 
-            selTipo.value = "🧠 Equipe PAS"; 
-            selTipo.disabled = false; // AGORA HABILITADO PARA EDITAR
+        if (cargoPlanilha.includes("PAS")) {
+            selTipo.value = "🧠 Equipe PAS";
+            selTipo.disabled = false;
             containerTipo.style.background = "#fff3e0";
-            containerTipo.style.borderColor = "#ff9800";
-        } 
-        // REGRA PARA GESTÃO TOTAL
-        else if (eGestorTotal) {
-            cargoLogado = "Diretor";
+        } else if (cargoLogado === "Diretor") {
             selTipo.value = "📝 Ocorrência Disciplinar";
             selTipo.disabled = false;
             containerTipo.style.background = "#e3f2fd";
-            containerTipo.style.borderColor = "#1976d2";
-        } 
-        // REGRA PARA PROFESSORES
-        else {
-            cargoLogado = "Professor";
+        } else {
             selTipo.value = "📝 Ocorrência Disciplinar";
             selTipo.disabled = true;
             containerTipo.style.background = "#f8f9fa";
-            containerTipo.style.borderColor = "#ddd";
         }
-        
         ajustarCamposRegistro();
         definirDataHoje();
     }
@@ -338,38 +313,27 @@
         const dVal = document.getElementById('dataOcorrenciaManual').value;
         if(!dVal) return alert("Selecione a data!");
         const dFormat = dVal.split("-").reverse().join("/");
-        
         const tipo = document.getElementById('selTipoRegistro').value;
         let prefixoTipo = `[${tipo}] `;
-
         const salvo = JSON.parse(localStorage.getItem('diarioAcessoSobral'));
         const cargoPlanilha = String(salvo.cargo).trim().toUpperCase();
-        
-        let rotuloUsuario = "Prof:";
-        if (cargoPlanilha === "PAS") {
-            rotuloUsuario = "PAS:";
-        }
-
+        let rotuloUsuario = cargoPlanilha.includes("PAS") ? "PAS:" : "Prof:";
         const selT = document.getElementById('selTratativa');
         let textoTratativa = selT ? selT.value : "";
         const dtC = document.getElementById('dataConvocacao');
         if (textoTratativa === "Família Convocada" && dtC && dtC.value) {
             textoTratativa += ` (Data: ${dtC.value.split("-").reverse().join("/")})`;
         }
-        
         const rGestao = document.getElementById('relatoGestaoTexto');
 
         const dados = {
             acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
             id: idEditando || Date.now(),
             professor: `${prefixoTipo}${rotuloUsuario} ${profNomeLogado.split(" ")[0]} (${disciplinaLogada})`,
-            dataManual: dFormat, 
-            turma: document.getElementById('selTurma').value,
-            aluno: document.getElementById('selAluno').value, 
-            texto: document.getElementById('relatoTexto').value,
+            dataManual: dFormat, turma: document.getElementById('selTurma').value,
+            aluno: document.getElementById('selAluno').value, texto: document.getElementById('relatoTexto').value,
             advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
-            tratativa: textoTratativa, 
-            relatoGestao: rGestao ? rGestao.value : ""
+            tratativa: textoTratativa, relatoGestao: rGestao ? rGestao.value : ""
         };
 
         if (navigator.onLine) {
@@ -379,9 +343,8 @@
             alert("Sucesso!"); limparForm();
         } else {
             let fila = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
-            fila.push(dados); 
-            localStorage.setItem('filaOfflineSobral', JSON.stringify(fila));
-            alert("Offline: Registro salvo no celular."); limparForm();
+            fila.push(dados); localStorage.setItem('filaOfflineSobral', JSON.stringify(fila));
+            alert("Offline: Registro salvo localmente. Sincronização ocorrerá ao voltar à rede."); limparForm();
         }
     }
 
@@ -394,9 +357,11 @@
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
         }
         localStorage.removeItem('filaOfflineSobral');
+        alert("Dados offline sincronizados com sucesso!");
     }
 
     async function consultarHistorico() {
+        if (!navigator.onLine) return alert("Busca de histórico disponível apenas online.");
         const t = document.getElementById('selTurmaCons').value, a = document.getElementById('selAlunoCons').value;
         if (!t || !a) return alert("Selecione Turma e Aluno.");
         document.getElementById('resConsulta').innerHTML = "Buscando...";
@@ -408,65 +373,55 @@
     }
 
     function exibirDados(data, t, a, p) {
-    const rDiv = document.getElementById('resConsulta');
-    const vT = document.getElementById('chkTodosRegistros').checked;
-    let filtrados = data.filter(r => r[3] && String(r[3]).trim() === t && String(r[4]).trim() === a);
-    
-    filtrados.sort((m, n) => {
-        const c = (txt) => { const pt = txt.split('/'); return new Date(pt[2], pt[1]-1, pt[0]); };
-        return c(m[1]) - c(n[1]);
-    });
-
-    if (p !== "Ano Todo") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
-    if (!vT) {
-        const meuNome = profNomeLogado.split(" ")[0];
-        filtrados = filtrados.filter(r => String(r[2]).includes(meuNome));
-    }
-
-    if (filtrados.length === 0) { rDiv.innerHTML = "<p>Nada encontrado.</p>"; return; }
-    
-    let html = `<h3>Histórico: ${a}</h3>`;
-    let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
-    
-    filtrados.forEach(r => {
-        const tri = identificarTrimestre(r[1]);
-        if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r);
-    });
-
-    for (let tri in grupos) {
-        if (grupos[tri].length > 0) {
-            html += `<div class="titulo-trimestre">${tri}</div>`;
-            grupos[tri].forEach(r => {
-                const souDono = String(r[2]).includes(profNomeLogado.split(" ")[0]);
-                const souGestor = (cargoLogado === "Diretor");
-                
-                // LÓGICA DE CORES DIFERENCIADAS
-                let estiloCard = "border-left: 5px solid var(--blue); background: white;";
-                if (String(r[2]).includes("[📖 Atendimento AEE]")) {
-                    estiloCard = "border-left: 5px solid #9c27b0; background: #f3e5f5;"; // Roxo para AEE
-                } else if (String(r[2]).includes("[🧠 Equipe PAS]")) {
-                    estiloCard = "border-left: 5px solid #ff9800; background: #fff3e0;"; // Laranja para PAS
-                }
-
-                const adv = (r[6] === "SIM") ? `<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>` : "";
-                const trat = r[7] ? `<div style="background:rgba(255,255,255,0.5); padding:10px; border-left:4px solid #4caf50; margin-top:10px;"><strong>Ação da Gestão:</strong> ${r[7]}</div>` : "";
-                const priv = (souGestor && r[8]) ? `<div style="background:rgba(255,255,255,0.6); padding:10px; border:1px dashed #ff9800; margin-top:5px; font-size:13px;"><strong>🔒 Relato Privado:</strong> ${r[8]}</div>` : "";
-
-                html += `<div class="item-ocorrencia" style="${estiloCard}">
-                    <div style="float:right; display:flex; gap:5px;">
-                        ${souDono || souGestor ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Editar</button>` : ''}
-                        ${souGestor ? `
-                            <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Tratar</button>
-                            <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
-                        ` : ''}
-                    </div>
-                    <strong>${r[1]} - ${r[2]}</strong><br><br>${r[5]}${adv}${trat}${priv}
-                </div>`;
-            });
+        const rDiv = document.getElementById('resConsulta');
+        const vT = document.getElementById('chkTodosRegistros').checked;
+        let filtrados = data.filter(r => r[3] && String(r[3]).trim() === t && String(r[4]).trim() === a);
+        filtrados.sort((m, n) => {
+            const c = (txt) => { const pt = txt.split('/'); return new Date(pt[2], pt[1]-1, pt[0]); };
+            return c(m[1]) - c(n[1]);
+        });
+        if (p !== "Ano Todo") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
+        if (!vT) {
+            const meuNome = profNomeLogado.split(" ")[0];
+            filtrados = filtrados.filter(r => String(r[2]).includes(meuNome));
         }
+        if (filtrados.length === 0) { rDiv.innerHTML = "<p>Nada encontrado.</p>"; return; }
+        let html = `<h3>Histórico: ${a}</h3>`;
+        let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
+        filtrados.forEach(r => {
+            const tri = identificarTrimestre(r[1]);
+            if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r);
+        });
+
+        for (let tri in grupos) {
+            if (grupos[tri].length > 0) {
+                html += `<div class="titulo-trimestre">${tri}</div>`;
+                grupos[tri].forEach(r => {
+                    const souDono = String(r[2]).includes(profNomeLogado.split(" ")[0]);
+                    const souGestor = (cargoLogado === "Diretor");
+                    let estiloCard = "border-left: 5px solid var(--blue); background: white;";
+                    if (String(r[2]).includes("[📖 Atendimento AEE]")) estiloCard = "border-left: 5px solid #9c27b0; background: #f3e5f5;";
+                    else if (String(r[2]).includes("[🧠 Equipe PAS]")) estiloCard = "border-left: 5px solid #ff9800; background: #fff3e0;";
+
+                    const adv = (r[6] === "SIM") ? `<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>` : "";
+                    const trat = r[7] ? `<div style="background:rgba(255,255,255,0.5); padding:10px; border-left:4px solid #4caf50; margin-top:10px;"><strong>Ação da Gestão:</strong> ${r[7]}</div>` : "";
+                    const priv = (souGestor && r[8]) ? `<div style="background:rgba(255,255,255,0.6); padding:10px; border:1px dashed #ff9800; margin-top:5px; font-size:13px;"><strong>🔒 Relato Privado:</strong> ${r[8]}</div>` : "";
+
+                    html += `<div class="item-ocorrencia" style="${estiloCard}">
+                        <div style="float:right; display:flex; gap:5px;">
+                            ${souDono || souGestor ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Editar</button>` : ''}
+                            ${souGestor ? `
+                                <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Tratar</button>
+                                <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">X</button>
+                            ` : ''}
+                        </div>
+                        <strong>${r[1]} - ${r[2]}</strong><br><br>${r[5]}${adv}${trat}${priv}
+                    </div>`;
+                });
+            }
+        }
+        rDiv.innerHTML = html; document.getElementById('btnImp').style.display = "block";
     }
-    rDiv.innerHTML = html; document.getElementById('btnImp').style.display = "block";
-}
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
         idEditando = id; tab(1);
@@ -480,25 +435,7 @@
         if (cargoLogado === "Diretor") {
             let opcaoSalva = tratativa;
             if (tratativa.includes("Data:")) opcaoSalva = "Família Convocada";
-            cont.innerHTML = `
-                <div style="background:#f0f7ff; padding:15px; border-radius:8px; margin:15px 0; border:1px solid #1976d2;">
-                    <label style="color:#1976d2; margin-top:0;">🛠️ Ação da Gestão:</label>
-                    <select id="selTratativa" onchange="verificarDataConvocacao()" style="width:100%; border:2px solid #1976d2;">
-                        <option value="">Selecione...</option>
-                        <option value="Conversa com o Aluno" ${opcaoSalva === "Conversa com o Aluno" ? "selected" : ""}>Conversa com o Aluno</option>
-                        <option value="Advertência Verbal" ${opcaoSalva === "Advertência Verbal" ? "selected" : ""}>Advertência Verbal</option>
-                        <option value="Advertência por Escrito" ${opcaoSalva === "Advertência por Escrito" ? "selected" : ""}>Advertência por Escrito</option>
-                        <option value="Família Convocada" ${opcaoSalva === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
-                        <option value="Encaminhamento Psicológico" ${opcaoSalva === "Encaminhamento Psicológico" ? "selected" : ""}>Encaminhamento Psicológico</option>
-                    </select>
-                    <div id="divDataConvocacao" style="display: ${opcaoSalva === "Família Convocada" ? "block" : "none"}; margin-top:10px;">
-                        <label>Data da Convocação:</label>
-                        <input type="date" id="dataConvocacao">
-                    </div>
-                    <label style="color:#0d47a1; margin-top:15px;">🔒 Relato Interno (PRIVADO):</label>
-                    <textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
-                </div>`;
-            if(focarTratativa) setTimeout(() => document.getElementById('selTratativa').focus(), 300);
+            cont.innerHTML = `<div style="background:#f0f7ff; padding:15px; border-radius:8px; margin:15px 0; border:1px solid #1976d2;"><label style="color:#1976d2; margin-top:0;">🛠️ Ação da Gestão:</label><select id="selTratativa" onchange="verificarDataConvocacao()" style="width:100%; border:2px solid #1976d2;"><option value="">Selecione...</option><option value="Conversa com o Aluno">Conversa com o Aluno</option><option value="Advertência Verbal">Advertência Verbal</option><option value="Advertência por Escrito">Advertência por Escrito</option><option value="Família Convocada">Família Convocada</option><option value="Encaminhamento Psicológico">Encaminhamento Psicológico</option></select><div id="divDataConvocacao" style="display:none; margin-top:10px;"><label>Data da Convocação:</label><input type="date" id="dataConvocacao"></div><label style="color:#0d47a1; margin-top:15px;">🔒 Relato Interno (PRIVADO):</label><textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea></div>`;
         }
         document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
     }
@@ -527,11 +464,7 @@
 
     function tab(n) { document.getElementById('aba1').classList.toggle('hidden', n !== 1); document.getElementById('aba2').classList.toggle('hidden', n !== 2); document.getElementById('t1').classList.toggle('active', n === 1); document.getElementById('t2').classList.toggle('active', n === 2); if(n===2) limparForm(); }
     function definirDataHoje() { document.getElementById('dataOcorrenciaManual').value = new Date().toISOString().split('T')[0]; }
-    function logout() {
-    // Remove apenas o acesso ativo, mas NÃO apaga o 'ultimoUsuarioSucesso'
-    localStorage.removeItem('diarioAcessoSobral'); 
-    location.reload(); 
-}
+    function logout() { localStorage.removeItem('diarioAcessoSobral'); location.reload(); }
     function toggleAjuda() { document.getElementById('caixaAjuda').classList.toggle('hidden'); }
     async function apagarRegistro(id) { if (!confirm("Excluir definitivamente?")) return; const p = new URLSearchParams(); p.append('acao', 'apagarOcorrencia'); p.append('id', id); await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p }); consultarHistorico(); }
     async function enviarWhatsApp() { const msg = `*Suporte Sobral*\n*Dúvida:* ${document.getElementById('textoDuvida').value}`; window.open(`https://api.whatsapp.com/send?phone=5531975580836&text=${encodeURIComponent(msg)}`, '_blank'); }
@@ -546,7 +479,3 @@
 
 </body>
 </html>
-
-
-
-
