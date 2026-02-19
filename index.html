@@ -271,23 +271,39 @@
         profNomeLogado = d.nome;
         disciplinaLogada = d.disciplina;
         const cargoPlanilha = String(d.cargo).trim().toUpperCase();
+        
         const cargosGestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA", "PAS"];
         const eGestorTotal = cargosGestores.some(c => cargoPlanilha.includes(c));
         cargoLogado = eGestorTotal ? "Diretor" : "Professor";
+        
         document.getElementById('secaoAcesso').classList.add('hidden');
         document.getElementById('conteudoDiario').classList.remove('hidden');
         document.getElementById('nomeProfLogado').value = profNomeLogado;
+        
         const selTipo = document.getElementById('selTipoRegistro');
         const containerTipo = document.getElementById('tipoRegistroContainer');
+
+        // REGRA PARA EQUIPE PAS
         if (cargoPlanilha.includes("PAS")) {
             selTipo.value = "🧠 Equipe PAS";
             selTipo.disabled = false;
             containerTipo.style.background = "#fff3e0";
-        } else if (cargoLogado === "Diretor") {
+        } 
+        // NOVA REGRA: PROF. AEE (Fixa em Atendimento AEE)
+        else if (cargoPlanilha.includes("PROF. AEE")) {
+            selTipo.value = "📖 Atendimento AEE";
+            selTipo.disabled = false; // Mantém fixado
+            containerTipo.style.background = "#f3e5f5"; // Lilás suave para combinar com a cor do card
+            containerTipo.style.borderColor = "#9c27b0";
+        }
+        // REGRA PARA GESTÃO TOTAL
+        else if (cargoLogado === "Diretor") {
             selTipo.value = "📝 Ocorrência Disciplinar";
             selTipo.disabled = false;
             containerTipo.style.background = "#e3f2fd";
-        } else {
+        } 
+        // REGRA PARA PROFESSORES REGULARES
+        else {
             selTipo.value = "📝 Ocorrência Disciplinar";
             selTipo.disabled = true;
             containerTipo.style.background = "#f8f9fa";
@@ -479,4 +495,5 @@
 
 </body>
 </html>
+
 
