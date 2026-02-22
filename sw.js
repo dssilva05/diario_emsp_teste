@@ -1,8 +1,8 @@
-const CACHE_NAME = 'sobral-pinto-v5'; // Aumente a versão para forçar atualização
+const CACHE_NAME = 'sobral-pinto-v6'; // Mude para v5 para forçar o celular a atualizar
 const ASSETS = [
   './',
   'index.html',
-  'manifest.json', // Certifique-se que o arquivo existe com este nome exato
+  'manifest.json',
   'icon-512.png'
 ];
 
