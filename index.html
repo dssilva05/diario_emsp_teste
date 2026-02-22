@@ -446,13 +446,15 @@ if ('serviceWorker' in navigator) {
     }
 
     function atualizarAlunos(idT, idA) {
-    	const t = document.getElementById(idT).value;
-    	const s = document.getElementById(idA);
-    	s.innerHTML = '<option value="">Selecione o Aluno...</option>';
+    const t = document.getElementById(idT).value;
+    const s = document.getElementById(idA);
+    
+    s.innerHTML = '<option value="">-- Selecione o Aluno ou Coletivo --</option>';
     
     if(ALUNOS[t]) {
-        // Adiciona a opção de toda a turma no início
-        s.add(new Option("👥 TODA A TURMA", "TODA A TURMA"));
+        // Adiciona a opção coletiva como a primeira escolha útil
+        s.add(new Option("👥 TODA A TURMA (Registro Coletivo)", "TODA A TURMA"));
+        
         ALUNOS[t].forEach(al => s.add(new Option(al, al)));
     }
 }
@@ -981,6 +983,7 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
 
 
 
