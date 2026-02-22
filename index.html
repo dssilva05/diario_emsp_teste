@@ -452,7 +452,7 @@ if ('serviceWorker' in navigator) {
     
     if(ALUNOS[t]) {
         // Adiciona a opção de toda a turma no início
-        s.add(new Option("👥 TODA A TURMA (Registro Coletivo)", "TODA A TURMA"));
+        s.add(new Option("👥 TODA A TURMA", "TODA A TURMA"));
         ALUNOS[t].forEach(al => s.add(new Option(al, al)));
     }
 }
@@ -520,9 +520,17 @@ if ('serviceWorker' in navigator) {
     }
 
     async function gravarOcorrencia() {
+    const turmaSel = document.getElementById('selTurma').value;
+    const alunoSel = document.getElementById('selAluno').value;
+    const relato = document.getElementById('relatoTexto').value;
     const dVal = document.getElementById('dataOcorrenciaManual').value;
-    if (!dVal) return alert("Selecione a data da ocorrência!");
-    
+
+    // Validação rigorosa com alertas específicos
+    if (!dVal) return alert("⚠️ Selecione a data da ocorrência!");
+    if (!turmaSel) return alert("⚠️ Selecione uma Turma!");
+    if (!alunoSel) return alert("⚠️ Selecione um Aluno ou a opção 'TODA A TURMA'!");
+    if (!relato.trim()) return alert("⚠️ O relato do professor não pode estar vazio!");
+
     const dFormat = dVal.split("-").reverse().join("/");
     const tipo = document.getElementById('selTipoRegistro').value;
 
@@ -973,6 +981,7 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
 
 
 
