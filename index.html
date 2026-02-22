@@ -446,11 +446,16 @@ if ('serviceWorker' in navigator) {
     }
 
     function atualizarAlunos(idT, idA) {
-        const t = document.getElementById(idT).value;
-        const s = document.getElementById(idA);
-        s.innerHTML = '<option value="">Selecione o Aluno...</option>';
-        if(ALUNOS[t]) ALUNOS[t].forEach(al => s.add(new Option(al, al)));
+    	const t = document.getElementById(idT).value;
+    	const s = document.getElementById(idA);
+    	s.innerHTML = '<option value="">Selecione o Aluno...</option>';
+    
+    if(ALUNOS[t]) {
+        // Adiciona a opção de toda a turma no início
+        s.add(new Option("👥 TODA A TURMA (Registro Coletivo)", "TODA A TURMA"));
+        ALUNOS[t].forEach(al => s.add(new Option(al, al)));
     }
+}
 
     async function executarLogin() {
         const u = document.getElementById('userLogin').value, s = document.getElementById('passLogin').value;
@@ -549,8 +554,8 @@ if ('serviceWorker' in navigator) {
 
     // Validação simples de campos obrigatórios
     if (!dados.turma || !dados.aluno || !dados.texto) {
-        return alert("Por favor, preencha Turma, Aluno e o Relato.");
-    }
+    	return alert("Por favor, preencha Turma, Aluno (ou Coletivo) e o Relato.");
+	}
 
     const btn = document.getElementById('btnGravar');
     const originalText = btn.innerText;
@@ -600,24 +605,29 @@ if ('serviceWorker' in navigator) {
 }
 
     async function consultarHistorico() {
-        const t = document.getElementById('selTurmaCons').value, a = document.getElementById('selAlunoCons').value;
-        if (!t || !a) return alert("Selecione Turma e Aluno.");
-        document.getElementById('resConsulta').innerHTML = "Buscando...";
-        try {
-            const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
-            const data = await res.json();
-            exibirDados(data, t, a, document.getElementById('selPeriodoCons').value);
-        } catch (e) { document.getElementById('resConsulta').innerHTML = "Erro de conexão."; }
-    }
+    const t = document.getElementById('selTurmaCons').value;
+    const a = document.getElementById('selAlunoCons').value;
+    
+    // Se não selecionar aluno, assumimos que quer ver os registros da turma (incluindo coletivos)
+    if (!t) return alert("Selecione pelo menos a Turma.");
+    
+    document.getElementById('resConsulta').innerHTML = "Buscando...";
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
+        const data = await res.json();
+        exibirDados(data, t, a, document.getElementById('selPeriodoCons').value);
+    } catch (e) { document.getElementById('resConsulta').innerHTML = "Erro de conexão."; }
+}
 
     function exibirDados(data, t, a, p) {
-        const rDiv = document.getElementById('resConsulta');
-        const vT = document.getElementById('chkTodosRegistros').checked;
-        let filtrados = data.filter(r => r[3] && String(r[3]).trim() === t && String(r[4]).trim() === a);
-        filtrados.sort((m, n) => {
-            const c = (txt) => { const pt = txt.split('/'); return new Date(pt[2], pt[1]-1, pt[0]); };
-            return c(m[1]) - c(n[1]);
-        });
+    const rDiv = document.getElementById('resConsulta');
+    const vT = document.getElementById('chkTodosRegistros').checked;
+    
+    let filtrados = data.filter(r => {
+        const turmaBate = r[3] && String(r[3]).trim() === t;
+        const alunoBate = a ? (String(r[4]).trim() === a) : (String(r[4]).trim() === "TODA A TURMA");
+        return turmaBate && alunoBate;
+    });
         if (p !== "Todos os Trimestres") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
         if (!vT) {
             const meuNome = profNomeLogado.split(" ")[0];
@@ -963,6 +973,7 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
 
 
 
