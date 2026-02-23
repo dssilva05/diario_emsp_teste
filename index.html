@@ -460,13 +460,39 @@ window.addEventListener('load', atualizarStatusRede);
         definirDataHoje();
     }
 
-    function ajustarCamposRegistro() {
-        const tipo = document.getElementById('selTipoRegistro').value;
-        const label = document.getElementById('labelRelato');
+        document.getElementById('selAluno').addEventListener('change', function() {
+        const alunoSelecionado = this.value;
         const boxAdv = document.getElementById('boxAdvertencia');
-        label.innerText = (tipo === "📝 Ocorrência Disciplinar") ? "Relato do Professor:" : "Detalhamento:";
-        tipo === "📝 Ocorrência Disciplinar" ? boxAdv.classList.remove('hidden') : boxAdv.classList.add('hidden');
+        const chkAdv = document.getElementById('chkAdvertencia');
+
+        if (alunoSelecionado === "TODA A TURMA") {
+            boxAdv.classList.add('hidden');
+            chkAdv.checked = false; 
+        } else {
+            // Chama a função de ajuste para verificar se deve mostrar a box
+            ajustarCamposRegistro(); 
+        }
+        });
+    
+    function ajustarCamposRegistro() {
+    const tipo = document.getElementById('selTipoRegistro').value;
+    const aluno = document.getElementById('selAluno').value;
+    const label = document.getElementById('labelRelato');
+    const boxAdv = document.getElementById('boxAdvertencia');
+
+    if (tipo === "📝 Ocorrência Disciplinar") {
+        label.innerText = "Relato do Professor:";
+        // Só mostra se NÃO for registro coletivo
+        if (aluno !== "TODA A TURMA") {
+            boxAdv.classList.remove('hidden');
+        } else {
+            boxAdv.classList.add('hidden');
+        }
+    } else {
+        label.innerText = "Detalhamento do Atendimento / Registro:";
+        boxAdv.classList.add('hidden');
     }
+}
     
     function alternarCheckboxes(q) {
         const m = document.getElementById('chkMeusRegistros');
@@ -494,5 +520,6 @@ window.addEventListener('load', atualizarStatusRede);
 
 </body>
 </html>
+
 
 
