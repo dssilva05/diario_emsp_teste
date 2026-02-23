@@ -30,7 +30,11 @@
         .hidden { display: none !important; }
         label { display: block; margin-top: 15px; font-weight: bold; color: #333; }
         input, select, textarea, .btn-main { width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
-        .btn-main { background: var(--blue); color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
+        .btn-main { background: var(--blue); color: white; font-weight: bold; cursor: pointer; border: none; padding: 12px; border-radius: 8px; width: 100%; transition: 0.3s; }
+        
+        .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 70vh; padding: 20px; }
+        .box-auth { background: var(--glass); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); width: 100%; max-width: 350px; text-align: center; backdrop-filter: blur(10px); }
+        .box-auth input { margin-bottom: 15px; border: 1px solid #ddd; width: 100%; }
         
         .filtro-item { display: flex; align-items: center; cursor: pointer; font-size: 14px; margin-bottom: 12px; padding: 5px; border-radius: 4px; transition: background 0.2s; }
         .filtro-item input { width: 20px; height: 20px; margin: 0 12px 0 0; cursor: pointer; flex-shrink: 0; }
@@ -336,29 +340,54 @@
     }
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
-        idEditando = id; tab(1);
-        const p = data.split('/'); if(p.length === 3) document.getElementById('dataOcorrenciaManual').value = `${p[2]}-${p[1]}-${p[0]}`;
-        document.getElementById('selTurma').value = turma;
-        atualizarAlunos('selTurma', 'selAluno');
-        setTimeout(() => document.getElementById('selAluno').value = aluno, 200);
-        document.getElementById('relatoTexto').value = texto;
+    idEditando = id; 
+    tab(1); // Vai para a aba de formulário
+    
+    // Converte data para o campo input date
+    const p = data.split('/');
+    if(p.length === 3) document.getElementById('dataOcorrenciaManual').value = `${p[2]}-${p[1]}-${p[0]}`;
+    
+    document.getElementById('selTurma').value = turma;
+    atualizarAlunos('selTurma', 'selAluno');
+    
+    setTimeout(() => {
+        document.getElementById('selAluno').value = aluno;
+        // Se for "TODA A TURMA", a lógica de ocultar advertência já dispara aqui
+    }, 200);
+    
+    document.getElementById('relatoTexto').value = texto;
 
-        const cont = document.getElementById('containerTratativa');
-        if (cargoLogado === "Diretor" && focarTratativa) {
-            cont.innerHTML = `<div style="background:#f0f7ff; padding:15px; border-radius:8px; margin-top:15px; border:1px solid #1976d2;">
-                <label>🛠️ Ação da Gestão:</label>
+    const cont = document.getElementById('containerTratativa');
+    
+    // Se for GESTOR e a intenção for TRATAR (focarTratativa = true)
+    if (cargoLogado === "Diretor" && focarTratativa === true) {
+        cont.innerHTML = `
+            <div style="background:#f0f7ff; padding:15px; border-radius:8px; margin-top:15px; border:1px solid #1976d2;">
+                <label style="color:#1976d2;">🛠️ Espaço da Gestão (Tratativa)</label>
                 <select id="selTratativa" onchange="verificarDataConvocacao()">
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione a ação...</option>
                     <option value="Conversa com o Aluno" ${tratativa.includes("Conversa") ? "selected" : ""}>Conversa com o Aluno</option>
                     <option value="Família Convocada" ${tratativa.includes("Família") ? "selected" : ""}>Família Convocada</option>
                 </select>
-                <div id="divDataConvocacao" style="display:none; margin-top:10px;"><label>Data Reunião:</label><input type="date" id="dataConvocacao"></div>
-                <label>🔒 Relato Privado:</label><textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
+                <div id="divDataConvocacao" style="display:none; margin-top:10px;">
+                    <label>📅 Data da Reunião:</label>
+                    <input type="date" id="dataConvocacao">
+                </div>
+                <label>🔒 Relato Interno (Privado):</label>
+                <textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
             </div>`;
-            setTimeout(() => { document.getElementById('selTratativa').focus(); verificarDataConvocacao(); }, 300);
-        } else { cont.innerHTML = ""; }
-        document.getElementById('btnGravar').innerText = "💾 Salvar";
+        cont.classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('selTratativa').focus();
+            verificarDataConvocacao();
+        }, 300);
+    } else {
+        // Se for edição normal, limpa o container para não poluir a tela do professor
+        cont.innerHTML = "";
+        cont.classList.add('hidden');
     }
+    document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
+}
 
     function verificarDataConvocacao() {
         const s = document.getElementById('selTratativa')?.value, d = document.getElementById('divDataConvocacao');
@@ -413,3 +442,4 @@
 
 </body>
 </html>
+
