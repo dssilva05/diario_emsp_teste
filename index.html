@@ -148,18 +148,24 @@
         </div>
 
         <div id="aba3" class="hidden">
-    <h2 style="color:var(--blue); margin-top:0;">📊 Dashboards</h2>
-    <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar Dados</button>
+    <h2 style="color:var(--blue); margin-top:0;">📊 Controle Geral de Ocorrências</h2>
+    <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar ocorrências</button>
     
     <div id="resDashboard" class="hidden">
-        <h3 style="border-left: 5px solid var(--gold); padding-left: 10px; color: var(--blue); font-size: 16px;">Alunos Críticos (+10 ocorrências)</h3>
-        <div id="resAlertaCritico" style="margin-bottom:20px;"></div>
+        <div class="dashboard-title">Alunos Críticos (+10 ocorrências)</div>
+        <div id="resAlertaCritico"></div>
 
-        <h3 style="border-left: 5px solid var(--gold); padding-left: 10px; color: var(--blue); font-size: 16px;">Ocorrências por Turma</h3>
+        <div class="dashboard-title">Ocorrências por Turma</div>
         <div id="graficoTurmas"></div>
 
-        <h3 style="border-left: 5px solid var(--gold); padding-left: 10px; color: var(--blue); font-size: 16px;">Distribuição por Tipo</h3>
-        <div id="graficoPizzaTipos" style="text-align:center;"></div>
+        <div class="dashboard-title">Alunos com mais ocorrências</div>
+        <div id="graficoPizzaAlunos"></div>
+
+        <div class="dashboard-title">Ocorrências (Geral)</div>
+        <div class="pie-charts-wrapper">
+            <div id="graficoPizzaTipos" class="pie-container"></div>
+            <div id="graficoPizzaTratativas" class="pie-container"></div>
+        </div>
     </div>
 </div>
     </div>
@@ -592,67 +598,80 @@
 }
 
     async function gerarAlertaCritico() {
-    if (!navigator.onLine) return alert("Conecte-se para atualizar.");
-    document.getElementById('resDashboard').classList.remove('hidden');
+    if (!navigator.onLine) return alert("⚠️ Você está offline. Conecte-se para atualizar o Dashboard.");
+    
+    const dashboard = document.getElementById('resDashboard');
+    dashboard.classList.remove('hidden');
+    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando dados...";
     
     try {
         const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
         const data = await res.json();
-        
-        let contAlunos = {}, contTipos = {}, contManha = {}, contTarde = {};
-        // Definição das turmas do turno da tarde
-        const turmasTarde = ["601", "602", "603", "701", "702", "801", "802", "901", "902", "5ºC"];
+
+        let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
+        const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
+        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
 
         for (let i = 1; i < data.length; i++) {
-            const tipo = (data[i][2] || "").match(/\[(.*?)\]/)?.[1] || "Outros";
+            const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
+            const tratativa = (data[i][7] || "").split(" (")[0].trim() || "Sem ação da gestão";
 
             if (turma) {
                 if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
                 else contManha[turma] = (contManha[turma] || 0) + 1;
             }
-            if (aluno && aluno !== "TODA A TURMA") contAlunos[aluno] = (contAlunos[aluno] || 0) + 1;
+
+            if (aluno && aluno !== "TODA A TURMA") {
+                const chave = `${aluno} (${turma})`;
+                contAlunos[chave] = (contAlunos[chave] || 0) + 1;
+            }
+
+            const tipoMatch = profField.match(/\[(.*?)\]/);
+            const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
+            contTratativas[tratativa] = (contTratativas[tratativa] || 0) + 1;
         }
 
-        // Função interna para gerar o HTML das barras
-        const montarGrafico = (obj, titulo) => {
-            const entradas = Object.entries(obj).sort((a, b) => b[1] - a[1]);
-            if (entradas.length === 0) return "";
+        // Funções de Renderização (Barras e Pizza)
+        const renderColunas = (obj, titulo) => {
+            const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
+            if (!entradas.length) return "";
             const max = Math.max(...Object.values(obj));
-            
-            return `<p style="color:var(--blue); font-weight:bold; margin-bottom:5px;">Turno: ${titulo}</p>
-            <div class="column-chart-container" style="background:white; border-radius:12px; margin-bottom:20px;">` + 
-            entradas.map(([t, v]) => `
-                <div class="column-wrapper">
-                    <div style="font-size:11px; font-weight:bold; color:var(--blue);">${v}</div>
-                    <div class="column-bar" style="height:${(v/max)*100}%; width:25px; background:var(--blue);"></div>
-                    <div class="column-label" style="font-weight:bold; color:#555;">${t}</div>
-                </div>`).join('') + `</div>`;
+            let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
+            entradas.forEach(([t, v]) => {
+                h += `<div class="column-wrapper"><div class="column-value">${v}</div><div class="column-bar" style="height:${(v/max)*100}%"></div><div class="column-label">${t}</div></div>`;
+            });
+            return h + `</div>`;
         };
 
-        // Renderiza turnos e alunos críticos
-        document.getElementById('graficoTurmas').innerHTML = montarGrafico(contManha, "Manhã") + montarGrafico(contTarde, "Tarde");
+        const renderPizza = (obj, titulo) => {
+            const dados = Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, 6);
+            const total = Object.values(obj).reduce((a, b) => a + b, 0);
+            let curr = 0;
+            const slices = dados.map(([lab, val], idx) => {
+                const p = (val/total)*100;
+                const s = `${cores[idx % cores.length]} ${curr}% ${curr+p}%`;
+                curr += p;
+                return { label: lab, val: val, color: cores[idx % cores.length], slice: s };
+            });
+            let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b><div class="pie-chart" style="background: conic-gradient(${slices.map(s=>s.slice).join(',')})"></div><ul class="pie-legend">`;
+            slices.forEach(s => h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`);
+            return h + `</ul>`;
+        };
+
+        // Aplicação nos Containers
+        document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
+        document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
+        document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
         
         const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10);
         document.getElementById('resAlertaCritico').innerHTML = criticos.length ? 
-            criticos.map(a => `<div class="item-ocorrencia" style="border-left-color:red"><b>${a[0]}</b>: <span style="color:red">${a[1]} registros</span></div>`).join('') :
-            "<p style='text-align:center; color:#888; padding:10px;'>Nenhum aluno com mais de 10 ocorrências.</p>";
+            `<table style="width:100%; font-size:12px; background:white;">${criticos.map(a => `<tr style="border-bottom:1px solid #eee"><td style="padding:8px;">${a[0]}</td><td style="color:red; text-align:right;"><b>${a[1]} ocorrências</b></td></tr>`).join('')}</table>` : 
+            "<p style='text-align:center; color:gray;'>Nenhum aluno crítico.</p>";
 
-        // Gráfico de Pizza (Tipos)
-        const total = Object.values(contTipos).reduce((a, b) => a + b, 0);
-        let curr = 0;
-        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0"];
-        const slices = Object.entries(contTipos).map(([lab, val], i) => {
-            const p = (val/total)*100;
-            const s = `${cores[i % cores.length]} ${curr}% ${curr + p}%`;
-            curr += p;
-            return s;
-        });
-        document.getElementById('graficoPizzaTipos').innerHTML = `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')}); margin: 20px auto;"></div>`;
-
-    } catch (e) { alert("Erro ao carregar dashboard."); }
+    } catch (e) { alert("Erro ao carregar Dashboard."); }
 }
 
     document.getElementById('selAluno').addEventListener('change', function() {
@@ -684,6 +703,7 @@
 
 </body>
 </html>
+
 
 
 
