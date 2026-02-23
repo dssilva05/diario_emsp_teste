@@ -657,6 +657,64 @@ async function gerarAlertaCritico() {
         definirDataHoje();
     }
 
+    function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
+    idEditando = id; 
+    tab(1); // Muda para a aba de inclusão
+    
+    // Converte data DD/MM/AAAA para AAAA-MM-DD (formato do input date)
+    const p = data.split('/');
+    if(p.length === 3) {
+        document.getElementById('dataOcorrenciaManual').value = `${p[2]}-${p[1]}-${p[0]}`;
+    }
+    
+    document.getElementById('selTurma').value = turma;
+    atualizarAlunos('selTurma', 'selAluno');
+    
+    // Delay para garantir que a lista de alunos foi carregada antes de selecionar
+    setTimeout(() => {
+        document.getElementById('selAluno').value = aluno;
+    }, 150);
+    
+    document.getElementById('relatoTexto').value = texto;
+    
+    // Se for um gestor tratando, abre os campos extras
+    if (cargoLogado === "Diretor") {
+        const cont = document.getElementById('containerTratativa');
+        cont.innerHTML = `
+            <div style="background:#f0f7ff; padding:15px; border-radius:8px; margin:15px 0; border:1px solid #1976d2;">
+                <label>🛠️ Ação da Gestão:</label>
+                <select id="selTratativa" onchange="verificarDataConvocacao()">
+                    <option value="">Selecione...</option>
+                    <option value="Conversa com o Aluno" ${tratativa.includes("Conversa") ? "selected" : ""}>Conversa com o Aluno</option>
+                    <option value="Família Convocada" ${tratativa.includes("Família") ? "selected" : ""}>Família Convocada</option>
+                </select>
+                <label>🔒 Relato Interno (PRIVADO):</label>
+                <textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
+            </div>`;
+        if(focarTratativa) setTimeout(() => document.getElementById('selTratativa').focus(), 300);
+    }
+    
+    document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
+}
+
+
+    async function apagarRegistro(id) {
+    if (!navigator.onLine) return alert("⚠️ A exclusão exige conexão com a internet.");
+    if (!confirm("Tem certeza que deseja excluir este registro definitivamente?")) return;
+    
+    const p = new URLSearchParams();
+    p.append('acao', 'apagarOcorrencia');
+    p.append('id', id);
+    
+    try {
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+        alert("Registro excluído!");
+        consultarHistorico(); // Atualiza a lista na tela
+    } catch(e) {
+        alert("Erro ao excluir. Verifique sua conexão.");
+    }
+}
+
         document.getElementById('selAluno').addEventListener('change', function() {
         const alunoSelecionado = this.value;
         const boxAdv = document.getElementById('boxAdvertencia');
@@ -729,6 +787,7 @@ async function gerarAlertaCritico() {
 
 </body>
 </html>
+
 
 
 
