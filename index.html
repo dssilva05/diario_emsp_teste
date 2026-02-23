@@ -343,7 +343,6 @@
     idEditando = id; 
     tab(1); // Vai para a aba de formulário
     
-    // Converte data para o campo input date
     const p = data.split('/');
     if(p.length === 3) document.getElementById('dataOcorrenciaManual').value = `${p[2]}-${p[1]}-${p[0]}`;
     
@@ -352,46 +351,55 @@
     
     setTimeout(() => {
         document.getElementById('selAluno').value = aluno;
-        // Se for "TODA A TURMA", a lógica de ocultar advertência já dispara aqui
     }, 200);
     
     document.getElementById('relatoTexto').value = texto;
 
     const cont = document.getElementById('containerTratativa');
     
-    // Se for GESTOR e a intenção for TRATAR (focarTratativa = true)
     if (cargoLogado === "Diretor" && focarTratativa === true) {
+        // Lógica para recuperar a opção correta e a data se houver
+        let opcaoLimpa = tratativa.split(" (Data:")[0].trim();
+        let dataSalva = "";
+        
+        // Se houver uma data no texto (Ex: Família Convocada (Data: 20/02/2026))
+        if (tratativa.includes("(Data:")) {
+            const matchData = tratativa.match(/\d{2}\/\d{2}\/\d{4}/);
+            if (matchData) {
+                dataSalva = matchData[0].split('/').reverse().join('-');
+            }
+        }
+
         cont.innerHTML = `
             <div style="background:#f0f7ff; padding:15px; border-radius:8px; margin-top:15px; border:1px solid #1976d2;">
                 <label style="color:#1976d2;">🛠️ Espaço da Gestão (Tratativa)</label>
                 <select id="selTratativa" onchange="verificarDataConvocacao()">
                     <option value="">Selecione a ação...</option>
-                    <option value="Conversa com o Aluno" ${opcaoSalva === "Conversa com o Aluno" ? "selected" : ""}>Conversa com o Aluno</option>
-                    <option value="Advertência Verbal" ${opcaoSalva === "Advertência Verbal" ? "selected" : ""}>Advertência Verbal</option>
-                    <option value="Advertência por Escrito" ${opcaoSalva === "Advertência por Escrito" ? "selected" : ""}>Advertência por Escrito</option>
-                    <option value="Família Convocada" ${opcaoSalva === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
-                    <option value="Encaminhamento PAS" ${opcaoSalva === "Encaminhamento PAS" ? "selected" : ""}>Encaminhamento PAS</option>
+                    <option value="Conversa com o Aluno" ${opcaoLimpa === "Conversa com o Aluno" ? "selected" : ""}>Conversa com o Aluno</option>
+                    <option value="Advertência Verbal" ${opcaoLimpa === "Advertência Verbal" ? "selected" : ""}>Advertência Verbal</option>
+                    <option value="Advertência por Escrito" ${opcaoLimpa === "Advertência por Escrito" ? "selected" : ""}>Advertência por Escrito</option>
+                    <option value="Família Convocada" ${opcaoLimpa === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
+                    <option value="Encaminhamento PAS" ${opcaoLimpa === "Encaminhamento PAS" ? "selected" : ""}>Encaminhamento PAS</option>
                 </select>
-                <div id="divDataConvocacao" style="display:none; margin-top:10px;">
+                <div id="divDataConvocacao" style="display:${opcaoLimpa === "Família Convocada" ? "block" : "none"}; margin-top:10px;">
                     <label>📅 Data da Reunião:</label>
-                    <input type="date" id="dataConvocacao">
+                    <input type="date" id="dataConvocacao" value="${dataSalva}">
                 </div>
                 <label>🔒 Relato Interno (Privado):</label>
                 <textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
             </div>`;
         cont.classList.remove('hidden');
+        
         setTimeout(() => {
             document.getElementById('selTratativa').focus();
-            verificarDataConvocacao();
+            // Não precisa chamar verificarDataConvocacao() aqui, pois o style:display já resolve
         }, 300);
     } else {
-        // Se for edição normal, limpa o container para não poluir a tela do professor
         cont.innerHTML = "";
         cont.classList.add('hidden');
     }
     document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
 }
-
     function verificarDataConvocacao() {
         const s = document.getElementById('selTratativa')?.value, d = document.getElementById('divDataConvocacao');
         if(d) d.style.display = (s === "Família Convocada") ? "block" : "none";
@@ -445,5 +453,6 @@
 
 </body>
 </html>
+
 
 
