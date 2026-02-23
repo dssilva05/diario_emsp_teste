@@ -138,7 +138,7 @@
                 <option value="3º Trimestre">3º Trimestre</option>
             </select>
             <div class="filtro-box">
-                <label class="filtro-item"><input type="checkbox" id="chkMeusRegistros" checked onclick="alternarCheckboxes('meu')"> <span>Meus registros</span></label>
+                <label class="filtro-item"><input type="checkbox" id="chkMeusRegistros" checked onclick="alternarCheckboxes('meu')"> <span>Apenas meus registros</span></label>
                 <label class="filtro-item"><input type="checkbox" id="chkTodosRegistros" onclick="alternarCheckboxes('todos')"> <span>Todas as ocorrências</span></label>
             </div>
             <button class="btn-main" onclick="consultarHistorico()">🔍 Buscar Histórico</button>
@@ -200,6 +200,36 @@
             barra.style.display = "block";
         }
     }
+
+    function alternarCheckboxes(quem) {
+    const cMeu = document.getElementById('chkMeusRegistros');
+    const cTodos = document.getElementById('chkTodosRegistros');
+
+    if (quem === 'meu') {
+        // Se marcou "Meus", desmarca o "Todos"
+        if (cMeu.checked) {
+            cTodos.checked = false;
+        } else {
+            // Impede desmarcar os dois: se tentou desmarcar "Meus", ele volta a marcar
+            cMeu.checked = true;
+        }
+    } else if (quem === 'todos') {
+        // Se marcou "Todos", desmarca o "Meus"
+        if (cTodos.checked) {
+            cMeu.checked = false;
+        } else {
+            // Impede desmarcar os dois
+            cTodos.checked = true;
+        }
+    }
+
+    // Se houver uma consulta ativa na tela, atualiza os resultados automaticamente
+    if (document.getElementById('resConsulta').innerHTML !== "" && 
+        document.getElementById('resConsulta').innerHTML !== "Buscando...") {
+        consultarHistorico();
+    }
+}
+    
     window.addEventListener('online', atualizarStatusRede);
     window.addEventListener('offline', atualizarStatusRede);
 
@@ -490,6 +520,7 @@
 
 </body>
 </html>
+
 
 
 
