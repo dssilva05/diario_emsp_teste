@@ -388,42 +388,91 @@ window.addEventListener('load', atualizarStatusRede);
 
     // CONSULTA COM SUPORTE A REGISTRO COLETIVO
     async function consultarHistorico() {
-        const t = document.getElementById('selTurmaCons').value;
-        const a = document.getElementById('selAlunoCons').value;
-        if (!t) return alert("Selecione a Turma.");
-        
-        document.getElementById('resConsulta').innerHTML = "Buscando...";
-        try {
-            const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
-            const data = await res.json();
-            exibirDados(data, t, a, document.getElementById('selPeriodoCons').value);
-        } catch (e) { document.getElementById('resConsulta').innerHTML = "Erro de conexão."; }
+    const t = document.getElementById('selTurmaCons').value;
+    const a = document.getElementById('selAlunoCons').value;
+    const p = document.getElementById('selPeriodoCons').value;
+    
+    if (!t) return alert("Selecione pelo menos a Turma.");
+    
+    const rDiv = document.getElementById('resConsulta');
+    rDiv.innerHTML = "🔍 Buscando registros...";
+    
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
+        const data = await res.json();
+        exibirDados(data, t, a, p);
+    } catch (e) { 
+        rDiv.innerHTML = "❌ Erro de conexão. Tente novamente."; 
     }
+}
 
     function exibirDados(data, t, a, p) {
-        const rDiv = document.getElementById('resConsulta');
-        const vT = document.getElementById('chkTodosRegistros').checked;
-        
-        let filtrados = data.filter(r => {
-            const tBate = r[3] && String(r[3]).trim() === t;
-            // Se aluno não for selecionado, mostra apenas o Coletivo daquela turma
-            const aBate = a ? (String(r[4]).trim() === a) : (String(r[4]).trim() === "TODA A TURMA");
-            return tBate && aBate;
-        });
+    const rDiv = document.getElementById('resConsulta');
+    const verTodos = document.getElementById('chkTodosRegistros').checked;
+    
+    // 1. Filtragem por Turma e Aluno (incluindo lógica de "Toda a Turma")
+    let filtrados = data.filter(r => {
+        const turmaBate = r[3] && String(r[3]).trim() === t;
+        // Se aluno não for selecionado, mostra apenas registros coletivos ("TODA A TURMA")
+        // Se aluno for selecionado, mostra apenas os dele
+        const alunoBate = a ? (String(r[4]).trim() === a) : (String(r[4]).trim() === "TODA A TURMA");
+        return turmaBate && alunoBate;
+    });
 
-        if (p !== "Todos os Trimestres") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
-        if (!vT) {
-            const meuNome = profNomeLogado.split(" ")[0];
-            filtrados = filtrados.filter(r => String(r[2]).includes(meuNome));
-        }
-
-        if (filtrados.length === 0) { rDiv.innerHTML = "<p>Nada encontrado.</p>"; return; }
-        
-        let html = `<h3>Histórico: ${a || "Coletivo da Turma"}</h3>`;
-        // ... (resto da lógica de agrupamento por trimestre e exibição - mantida igual ao original)
-        rDiv.innerHTML = html + " (Listagem simplificada para visualização)";
-        document.getElementById('btnImp').style.display = "block";
+    // 2. Filtragem por Período (Trimestre)
+    if (p !== "Todos os Trimestres") {
+        filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
     }
+
+    // 3. Filtragem por Professor (Dono do Registro)
+    if (!verTodos) {
+        // Pega o primeiro nome do professor logado (definido no login)
+        const meuNome = profNomeLogado.split(" ")[0].toUpperCase();
+        filtrados = filtrados.filter(r => String(r[2]).toUpperCase().includes(meuNome));
+    }
+
+    // Ordenação por data (da mais recente para a mais antiga)
+    filtrados.sort((m, n) => {
+        const conv = (txt) => { const pt = txt.split('/'); return new Date(pt[2], pt[1]-1, pt[0]); };
+        return conv(n[1]) - conv(m[1]);
+    });
+
+    if (filtrados.length === 0) { 
+        rDiv.innerHTML = `<p style="color:red; text-align:center; padding:20px;">Nenhum registro encontrado para este filtro.</p>`; 
+        return; 
+    }
+    
+    // Renderização do HTML (Mantendo sua estrutura de grupos por trimestre)
+    let html = `<h3>Visualizando: ${a || "Registros Coletivos (Turma " + t + ")"}</h3>`;
+    let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
+    
+    filtrados.forEach(r => {
+        const tri = identificarTrimestre(r[1]);
+        if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r);
+    });
+
+    for (let tri in grupos) {
+        if (grupos[tri].length > 0) {
+            html += `<div class="titulo-trimestre">${tri}</div>`;
+            grupos[tri].forEach(r => {
+                const souDono = String(r[2]).includes(profNomeLogado.split(" ")[0]);
+                const souGestor = (cargoLogado === "Diretor");
+                
+                html += `<div class="item-ocorrencia">
+                    <div style="float:right;">
+                        ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">Editar</button>` : ''}
+                    </div>
+                    <strong>${r[1]} - ${r[2]}</strong><br>
+                    <p>${r[5]}</p>
+                    ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold;">⚠️ Advertência Enviada</p>' : ''}
+                    ${r[7] ? `<div style="background:#e8f5e9; padding:8px; border-left:4px solid #4caf50; margin-top:5px;"><strong>Gestão:</strong> ${r[7]}</div>` : ''}
+                </div>`;
+            });
+        }
+    }
+    rDiv.innerHTML = html;
+    document.getElementById('btnImp').style.display = "block";
+}
 
     // FUNÇÕES AUXILIARES MANTIDAS
     function toggleSenha(id, icone) {
@@ -494,13 +543,20 @@ window.addEventListener('load', atualizarStatusRede);
     }
 }
     
-    function alternarCheckboxes(q) {
-        const m = document.getElementById('chkMeusRegistros');
-        const t = document.getElementById('chkTodosRegistros');
-        if (q === 'meu' && m.checked) t.checked = false;
-        else if (q === 'todos' && t.checked) m.checked = false;
-        if (!m.checked && !t.checked) m.checked = true;
+    function alternarCheckboxes(quem) {
+    const cMeu = document.getElementById('chkMeusRegistros');
+    const cTodos = document.getElementById('chkTodosRegistros');
+    if (quem === 'meu' && cMeu.checked) cTodos.checked = false;
+    else if (quem === 'todos' && cTodos.checked) cMeu.checked = false;
+    
+    // Garante que pelo menos um esteja sempre marcado
+    if (!cMeu.checked && !cTodos.checked) cMeu.checked = true;
+    
+    // Atualiza a consulta automaticamente ao trocar o filtro se já houver busca na tela
+    if (document.getElementById('resConsulta').innerHTML !== "") {
+        consultarHistorico();
     }
+}
 
     function identificarTrimestre(ds) { 
         const p = ds.split('/'); const d = new Date(p[2], p[1]-1, p[0]);
@@ -520,6 +576,7 @@ window.addEventListener('load', atualizarStatusRede);
 
 </body>
 </html>
+
 
 
 
