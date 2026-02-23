@@ -288,26 +288,30 @@
         return alert("⚠️ Preencha Data, Turma, Aluno e Relato!");
     }
 
-    // --- NOVA LÓGICA PARA CAPTURAR TRATATIVA E DATA ---
-    let tratativaFinal = "";
-    let relatoGestaoFinal = "";
+    // --- LÓGICA DE PRESERVAÇÃO DA TRATATIVA ---
+    let tratativaParaSalvar = "";
+    let relatoGestaoParaSalvar = "";
 
     if (cargoLogado === "Diretor") {
+        // Se for Diretor, ele pega o que está nos campos da tela (pode estar editando a tratativa)
         const selT = document.getElementById('selTratativa');
         const dtC = document.getElementById('dataConvocacao');
         const rG = document.getElementById('relatoGestaoTexto');
 
         if (selT && selT.value) {
-            tratativaFinal = selT.value;
-            // Se for Família Convocada, anexa a data ao texto da tratativa
-            if (tratativaFinal === "Família Convocada" && dtC && dtC.value) {
+            tratativaParaSalvar = selT.value;
+            if (tratativaParaSalvar === "Família Convocada" && dtC && dtC.value) {
                 const dataFormatada = dtC.value.split('-').reverse().join('/');
-                tratativaFinal += ` (Data: ${dataFormatada})`;
+                tratativaParaSalvar += ` (Data: ${dataFormatada})`;
             }
         }
-        if (rG) relatoGestaoFinal = rG.value;
+        if (rG) relatoGestaoParaSalvar = rG.value;
+    } else {
+        // Se for PROFESSOR, ele recupera o que já estava salvo antes de abrir a edição
+        // Essas variáveis 'tratativaAntiga' e 'gestaoAntiga' precisam ser preenchidas no carregarParaEdicao
+        tratativaParaSalvar = window.tratativaAtual || "";
+        relatoGestaoParaSalvar = window.relatoGestaoAtual || "";
     }
-    // --------------------------------------------------
 
     const dados = {
         acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
@@ -318,8 +322,8 @@
         aluno: aVal,
         texto: rVal,
         advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
-        tratativa: tratativaFinal, // Agora envia com a data inclusa
-        relatoGestao: relatoGestaoFinal
+        tratativa: tratativaParaSalvar,
+        relatoGestao: relatoGestaoParaSalvar
     };
 
     const btn = document.getElementById('btnGravar');
@@ -622,6 +626,7 @@
 
 </body>
 </html>
+
 
 
 
