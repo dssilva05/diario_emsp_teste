@@ -366,8 +366,11 @@
                 <label style="color:#1976d2;">🛠️ Espaço da Gestão (Tratativa)</label>
                 <select id="selTratativa" onchange="verificarDataConvocacao()">
                     <option value="">Selecione a ação...</option>
-                    <option value="Conversa com o Aluno" ${tratativa.includes("Conversa") ? "selected" : ""}>Conversa com o Aluno</option>
-                    <option value="Família Convocada" ${tratativa.includes("Família") ? "selected" : ""}>Família Convocada</option>
+                    <option value="Conversa com o Aluno" ${opcaoSalva === "Conversa com o Aluno" ? "selected" : ""}>Conversa com o Aluno</option>
+                    <option value="Advertência Verbal" ${opcaoSalva === "Advertência Verbal" ? "selected" : ""}>Advertência Verbal</option>
+                    <option value="Advertência por Escrito" ${opcaoSalva === "Advertência por Escrito" ? "selected" : ""}>Advertência por Escrito</option>
+                    <option value="Família Convocada" ${opcaoSalva === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
+                    <option value="Encaminhamento PAS" ${opcaoSalva === "Encaminhamento PAS" ? "selected" : ""}>Encaminhamento PAS</option>
                 </select>
                 <div id="divDataConvocacao" style="display:none; margin-top:10px;">
                     <label>📅 Data da Reunião:</label>
@@ -442,4 +445,5 @@
 
 </body>
 </html>
+
 
