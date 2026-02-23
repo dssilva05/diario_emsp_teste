@@ -16,7 +16,19 @@
         :root { --blue: #0d47a1; --gold: #ffd600; --glass: rgba(255, 255, 255, 0.95); }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80') center/cover fixed; min-height: 100vh; }
         
-        #status-bar { width: 100%; padding: 5px; text-align: center; font-size: 12px; font-weight: bold; color: white; transition: 0.5s; position: sticky; top: 0; z-index: 10000; }
+        #status-bar { 
+    width: 100%; 
+    padding: 10px; 
+    text-align: center; 
+    font-size: 14px; 
+    font-weight: bold; 
+    color: white; 
+    position: sticky; 
+    top: 0; 
+    z-index: 10001; /* Fica acima de tudo */
+    transition: background 0.5s ease;
+    display: none; /* Começa escondida e aparece via JS */
+}
         .online { background: #4caf50; display: none; }
         .offline { background: #ff9800; display: block; }
 
@@ -181,6 +193,8 @@
     let ALUNOS = {};
     let cargoLogado = "", profNomeLogado = "", disciplinaLogada = "", idEditando = null;
 
+    
+    
     // REGISTRO DO SERVICE WORKER
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -208,6 +222,38 @@
             carregarDadosIniciais();
         }
     };
+
+    // Função para atualizar a interface com base no status da rede
+function atualizarStatusRede() {
+    const barra = document.getElementById('status-bar');
+    
+    if (navigator.onLine) {
+        // Quando volta a internet
+        barra.textContent = "✅ Você está Online. Sincronizando dados...";
+        barra.style.background = "#4caf50";
+        barra.style.display = "block";
+        
+        // Tenta enviar os dados acumulados offline
+        sincronizarDados();
+
+        // Esconde a barra após 3 segundos para não atrapalhar
+        setTimeout(() => {
+            barra.style.display = "none";
+        }, 3000);
+    } else {
+        // Quando cai a internet
+        barra.textContent = "⚠️ Você está Offline. Os registros serão salvos no celular.";
+        barra.style.background = "#ff9800";
+        barra.style.display = "block";
+    }
+}
+
+// Ouvintes para mudanças de conexão em tempo real
+window.addEventListener('online', atualizarStatusRede);
+window.addEventListener('offline', atualizarStatusRede);
+
+// Chamar uma vez ao carregar a página para definir o estado inicial
+window.addEventListener('load', atualizarStatusRede);
 
     async function executarLogin() {
         const u = document.getElementById('userLogin').value;
@@ -448,3 +494,4 @@
 
 </body>
 </html>
+
