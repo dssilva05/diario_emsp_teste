@@ -840,9 +840,9 @@
     function toggleSenha(id, ic) { const p = document.getElementById(id), i = document.getElementById(ic); p.type = p.type === "password" ? "text" : "password"; i.innerText = p.type === "password" ? "👁️" : "🙈"; }
     function identificarTrimestre(ds) { 
         if(!ds) return ""; let p = ds.split('/'); let d = new Date(p[2], p[1]-1, p[0]);
-        if (d >= new Date(2026, 1, 4) && d <= new Date(2026, 4, 15)) return "1º Trimestre";
-        if (d >= new Date(2026, 4, 18) && d <= new Date(2026, 7, 31)) return "2º Trimestre";
-        return "3º Trimestre";
+        if (d >= new Date(2026, 1, 4) && d <= new Date(2026, 5, 6)) return "1º Trimestre";
+        if (d >= new Date(2026, 5, 7) && d <= new Date(2026, 8, 31)) return "2º Trimestre";
+        if (d >= new Date(2026, 9, 1) && d <= new Date(2026, 12, 18)) return "3º Trimestre";
     }
     async function carregarDadosIniciais() {
         try { const res = await fetch(`${SCRIPT_URL}?acao=getListaAlunos`); ALUNOS = await res.json(); localStorage.setItem('cache_alunos_sobral', JSON.stringify(ALUNOS)); popularTurmas(); } catch(e){}
@@ -851,6 +851,7 @@
 
 </body>
 </html>
+
 
 
 
