@@ -691,15 +691,18 @@ async function gerarAlertaCritico() {
                     <option value="Família Convocada" ${opcaoSalva === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
                     <option value="Encaminhamento PAS" ${opcaoSalva === "Encaminhamento PAS" ? "selected" : ""}>Encaminhamento PAS</option>
                 </select>
-                <label>🔒 Relato Interno (PRIVADO):</label>
+               <div id="divDataConvocacao" style="display: ${opcaoSalva === "Família Convocada" ? "block" : "none"}; margin-top:10px;">
+                    <label>📅 Data da Convocação:</label>
+                    <input type="date" id="dataConvocacao" value="${dataSalva}">
+                </div>
+
+                <label style="color:#0d47a1; margin-top:15px;">🔒 Relato Interno (PRIVADO):</label>
                 <textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
             </div>`;
         if(focarTratativa) setTimeout(() => document.getElementById('selTratativa').focus(), 300);
     }
-    
     document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
 }
-
 
     async function apagarRegistro(id) {
     if (!navigator.onLine) return alert("⚠️ A exclusão exige conexão com a internet.");
@@ -790,6 +793,7 @@ async function gerarAlertaCritico() {
 
 </body>
 </html>
+
 
 
 
