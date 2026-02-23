@@ -588,23 +588,82 @@
 }
 
     async function gerarAlertaCritico() {
-        if (!navigator.onLine) return alert("Offline!");
-        document.getElementById('resDashboard').classList.remove('hidden');
-        try {
-            const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
-            const data = await res.json();
-            let contAlunos = {}, contTipos = {};
-            for (let i = 1; i < data.length; i++) {
-                let a = data[i][4], t = data[i][2] || "";
-                if (a) contAlunos[a] = (contAlunos[a] || 0) + 1;
-                let m = t.match(/\[(.*?)\]/); let tp = m ? m[1] : "OUTRO";
-                contTipos[tp] = (contTipos[tp] || 0) + 1;
+    if (!navigator.onLine) return alert("⚠️ Conecte-se para atualizar os dados do Dashboard.");
+    
+    const dashboard = document.getElementById('resDashboard');
+    dashboard.classList.remove('hidden');
+    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando...";
+    
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
+        const data = await res.json();
+
+        let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {};
+        const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
+        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800"];
+
+        // Processamento dos dados (pula cabeçalho i=0)
+        for (let i = 1; i < data.length; i++) {
+            const tipoRaw = data[i][2] || "";
+            const turma = data[i][3];
+            const aluno = data[i][4];
+
+            if (turma) {
+                if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
+                else contManha[turma] = (contManha[turma] || 0) + 1;
             }
-            // (Lógica simplificada para exemplo, gráficos exigem biblioteca ou conic-gradient CSS manual)
-            document.getElementById('resAlertaCritico').innerHTML = "Dashboard carregado. Veja console para detalhes.";
-            console.log(contAlunos, contTipos);
-        } catch(e) { alert("Erro dashboard"); }
-    }
+
+            if (aluno && aluno !== "TODA A TURMA") {
+                const chave = `${aluno} (${turma})`;
+                contAlunos[chave] = (contAlunos[chave] || 0) + 1;
+            }
+
+            const m = tipoRaw.match(/\[(.*?)\]/);
+            const tipo = m ? m[1] : "Outros";
+            contTipos[tipo] = (contTipos[tipo] || 0) + 1;
+        }
+
+        // --- RENDERIZAR PIZZA (Tipos de Ocorrência) ---
+        const renderPizza = (obj) => {
+            const entries = Object.entries(obj).sort((a,b) => b[1] - a[1]);
+            const total = entries.reduce((acc, cur) => acc + cur[1], 0);
+            let current = 0;
+            const slices = entries.map(([lab, val], idx) => {
+                const p = (val/total)*100;
+                const s = `${cores[idx % cores.length]} ${current}% ${current + p}%`;
+                current += p;
+                return s;
+            });
+            return `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>`;
+        };
+        document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos);
+
+        // --- RENDERIZAR COLUNAS (Turmas) ---
+        const renderColunas = (obj, titulo) => {
+            const entries = Object.entries(obj).sort();
+            if (entries.length === 0) return "";
+            const max = Math.max(...Object.values(obj));
+            let h = `<p><b>${titulo}</b></p><div class="column-chart-container">`;
+            entries.forEach(([t, v]) => {
+                const altura = (v / max) * 100;
+                h += `<div class="column-wrapper">
+                        <div class="column-value">${v}</div>
+                        <div class="column-bar" style="height:${altura}%"></div>
+                        <div class="column-label">${t}</div>
+                      </div>`;
+            });
+            return h + `</div>`;
+        };
+        document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
+
+        // --- ALUNOS CRÍTICOS ---
+        const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10).sort((a,b) => b[1] - a[1]);
+        document.getElementById('resAlertaCritico').innerHTML = criticos.length ? 
+            criticos.map(a => `<div class="item-ocorrencia" style="border-left-color:red"><b>${a[0]}</b>: <span style="color:red">${a[1]} registros</span></div>`).join('') :
+            "Nenhum aluno com +10 ocorrências.";
+
+    } catch (e) { alert("Erro ao carregar dashboard."); }
+}
 
     document.getElementById('selAluno').addEventListener('change', function() {
         if (this.value === "TODA A TURMA") { document.getElementById('boxAdvertencia').classList.add('hidden'); }
@@ -635,6 +694,7 @@
 
 </body>
 </html>
+
 
 
 
