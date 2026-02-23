@@ -301,6 +301,36 @@
                 alert("Gravado!"); limparForm();
             } catch (e) { salvarFila(dados); }
         } else { salvarFila(dados); }
+
+        let tratativaFinal = "";
+let relatoPrivadoFinal = "";
+
+if (cargoLogado === "Diretor") {
+    const selTrat = document.getElementById('selTratativa');
+    const dataConv = document.getElementById('dataConvocacao');
+    const relatoPriv = document.getElementById('relatoGestaoTexto');
+
+    if (selTrat) {
+        tratativaFinal = selTrat.value;
+        // Se for Família Convocada e tiver data, monta a string com a data formatada
+        if (tratativaFinal === "Família Convocada" && dataConv && dataConv.value) {
+            const d = dataConv.value.split('-'); // AAAA-MM-DD
+            tratativaFinal += ` (Data: ${d[2]}/${[1]}/${d[0]})`;
+        }
+    }
+    
+    if (relatoPriv) {
+        relatoPrivadoFinal = relatoPriv.value;
+    }
+}
+
+// Na hora de montar os parâmetros (URLSearchParams) para enviar ao GAS:
+const p = new URLSearchParams();
+p.append('acao', 'gravarOcorrencia');
+p.append('id', idEditando);
+// ... outros campos (data, turma, aluno, relato) ...
+p.append('tratativa', tratativaFinal);
+p.append('relatoGestao', relatoPrivadoFinal);
     }
 
     function salvarFila(d) {
@@ -570,6 +600,7 @@
 
 </body>
 </html>
+
 
 
 
