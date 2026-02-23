@@ -431,6 +431,13 @@
     btn.disabled = false;
 }
 
+    // Converte "dd/mm/aaaa" em um número comparável
+    function converterParaDataObjeto(stringData) {
+        if (!stringData) return 0;
+        const [dia, mes, ano] = stringData.split('/');
+        return new Date(ano, mes - 1, dia).getTime();
+    }
+    
     function salvarFila(d) {
         let f = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
         f.push(d); localStorage.setItem('filaOfflineSobral', JSON.stringify(f));
@@ -453,11 +460,32 @@
         if (!t) return alert("Selecione a Turma.");
         const rDiv = document.getElementById('resConsulta'); rDiv.innerHTML = "Buscando...";
         try {
-            const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
-            const data = await res.json();
-            exibirDados(data, t, a, document.getElementById('selPeriodoCons').value);
-        } catch (e) { rDiv.innerHTML = "Erro."; }
-    }
+    const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
+    let dadosPlanilha = await res.json();
+
+    // Remove o cabeçalho
+    dadosPlanilha.shift();
+
+    // ORDENAÇÃO CRONOLÓGICA (Mais recentes primeiro)
+    dadosPlanilha.sort((a, b) => {
+        const dataA = converterParaDataObjeto(a[1]); // Assumindo que a coluna 1 é a data
+        const dataB = converterParaDataObjeto(b[1]);
+        return dataB - dataA; // Troque para dataA - dataB se quiser as mais antigas primeiro
+    });
+
+    // Agora organize por trimestres para exibição
+    let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Outros": [] };
+
+    dadosPlanilha.forEach(linha => {
+        const tri = identificarTrimestre(linha[1]); // Sua função de data que corrigimos antes
+        if (grupos[tri]) {
+            grupos[tri].push(linha);
+        } else {
+            grupos[tri] = [linha];
+        }
+    });
+       }
+}
 
     function exibirDados(data, t, a, p) {
     const rDiv = document.getElementById('resConsulta');
@@ -851,6 +879,7 @@
 
 </body>
 </html>
+
 
 
 
