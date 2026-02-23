@@ -12,38 +12,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="#0d47a1">
 
-    @media print {
-    /* Força o navegador a imprimir cores e fundos */
-    body { 
-        -webkit-print-color-adjust: exact !important; 
-        print-color-adjust: exact !important; 
-        background: white !important; /* Remove o fundo escuro na impressão */
-    }
-
-    /* Esconde elementos desnecessários (botões, abas, cabeçalho da escola) */
-    header, .tabs, .btn-main, .btn-ajuda-fixo, .filtro-box, select { 
-        display: none !important; 
-    }
-
-    /* Ajusta o container para ocupar a folha toda */
-    .container { 
-        max-width: 100% !important; 
-        margin: 0 !important; 
-        padding: 0 !important; 
-    }
-
-    .card { 
-        box-shadow: none !important; 
-        background: white !important; 
-    }
-
-    /* Garante que as ocorrências sejam visíveis e tenham bordas */
-    .item-ocorrencia { 
-        border: 1px solid #ccc !important; 
-        page-break-inside: avoid; /* Evita cortar uma ocorrência no meio da página */
-        margin-bottom: 10px !important;
-    }
-}
     <style>
         :root { --blue: #0d47a1; --gold: #ffd600; --glass: rgba(255, 255, 255, 0.95); }
     body { font-family: 'Segoe UI', sans-serif; margin: 0; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80') center/cover fixed; min-height: 100vh; }
@@ -136,6 +104,32 @@
         .item-ocorrencia { background: white; padding: 15px; border-left: 5px solid var(--blue); margin-top: 10px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
         .btn-ajuda-fixo { position: fixed; bottom: 20px; right: 20px; background: #25d366; color: white; padding: 10px 20px; border-radius: 30px; border: none; font-weight: bold; z-index: 9999; cursor: pointer; }
         .modal-ajuda { position: fixed; bottom: 90px; right: 20px; width: 280px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; }
+    
+    @media print {
+        body { 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+            background: white !important; 
+        }
+        header, .tabs, .btn-main, .btn-ajuda-fixo, .filtro-box, select { 
+            display: none !important; 
+        }
+        .container { 
+            max-width: 100% !important; 
+            margin: 0 !important; 
+            padding: 0 !important; 
+        }
+        .card { 
+            box-shadow: none !important; 
+            background: white !important; 
+        }
+        .item-ocorrencia { 
+            border: 1px solid #ccc !important; 
+            page-break-inside: avoid; 
+            margin-bottom: 10px !important;
+        }
+    }
+    
     </style>
 </head>
 
@@ -936,6 +930,7 @@
 
 </body>
 </html>
+
 
 
 
