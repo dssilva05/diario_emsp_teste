@@ -548,9 +548,12 @@ p.append('relatoGestao', relatoPrivadoFinal);
 }
     
     function verificarDataConvocacao() {
-        const s = document.getElementById('selTratativa')?.value, d = document.getElementById('divDataConvocacao');
-        if(d) d.style.display = (s === "Família Convocada") ? "block" : "none";
+    const sel = document.getElementById('selTratativa');
+    const div = document.getElementById('divDataConvocacao');
+    if (sel && div) {
+        div.style.display = (sel.value === "Família Convocada") ? "block" : "none";
     }
+}
 
     async function gerarAlertaCritico() {
         if (!navigator.onLine) return alert("Offline!");
@@ -600,6 +603,7 @@ p.append('relatoGestao', relatoPrivadoFinal);
 
 </body>
 </html>
+
 
 
 
