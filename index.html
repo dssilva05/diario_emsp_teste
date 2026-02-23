@@ -148,23 +148,18 @@
         </div>
 
         <div id="aba3" class="hidden">
-    <h2 style="color:var(--blue); margin-top:0;">📊 Controle Geral de Ocorrências</h2>
-    <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar ocorrências</button>
+    <h2 style="color:var(--blue); margin-top:0;">📊 Dashboards</h2>
+    <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar Dados</button>
+    
     <div id="resDashboard" class="hidden">
-        <div class="dashboard-title">Alunos Críticos (+10 ocorrências)</div>
-        <div id="resAlertaCritico"></div>
+        <h3 style="border-left: 5px solid var(--gold); padding-left: 10px; color: var(--blue); font-size: 16px;">Alunos Críticos (+10 ocorrências)</h3>
+        <div id="resAlertaCritico" style="margin-bottom:20px;"></div>
 
-        <div class="dashboard-title">Ocorrências por Turma</div>
+        <h3 style="border-left: 5px solid var(--gold); padding-left: 10px; color: var(--blue); font-size: 16px;">Ocorrências por Turma</h3>
         <div id="graficoTurmas"></div>
 
-        <div class="dashboard-title">Alunos com mais ocorrências</div>
-        <div id="tabelaTopAlunos"></div>
-
-        <div class="dashboard-title">Ocorrências (Geral)</div>
-<div class="pie-charts-wrapper">
-    <div id="graficoPizzaTipos" class="pie-container"></div>
-    <div id="graficoPizzaTratativas" class="pie-container"></div>
-</div>
+        <h3 style="border-left: 5px solid var(--gold); padding-left: 10px; color: var(--blue); font-size: 16px;">Distribuição por Tipo</h3>
+        <div id="graficoPizzaTipos" style="text-align:center;"></div>
     </div>
 </div>
     </div>
@@ -603,40 +598,59 @@
     try {
         const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
         const data = await res.json();
-        let contAlunos = {}, contTipos = {}, contTurmas = {};
-        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0"];
+        
+        let contAlunos = {}, contTipos = {}, contManha = {}, contTarde = {};
+        // Definição das turmas do turno da tarde
+        const turmasTarde = ["601", "602", "603", "701", "702", "801", "802", "901", "902", "5ºC"];
 
         for (let i = 1; i < data.length; i++) {
             const tipo = (data[i][2] || "").match(/\[(.*?)\]/)?.[1] || "Outros";
             const turma = data[i][3];
             const aluno = data[i][4];
 
-            if (turma) contTurmas[turma] = (contTurmas[turma] || 0) + 1;
+            if (turma) {
+                if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
+                else contManha[turma] = (contManha[turma] || 0) + 1;
+            }
             if (aluno && aluno !== "TODA A TURMA") contAlunos[aluno] = (contAlunos[aluno] || 0) + 1;
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
         }
 
-        // Gráfico de Barras (Turmas)
-        const maxBar = Math.max(...Object.values(contTurmas));
-        document.getElementById('graficoTurmas').innerHTML = `<p><b>Ocorrências por Turma:</b></p><div class="column-chart-container">` + 
-            Object.entries(contTurmas).map(([t, v]) => `
+        // Função interna para gerar o HTML das barras
+        const montarGrafico = (obj, titulo) => {
+            const entradas = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+            if (entradas.length === 0) return "";
+            const max = Math.max(...Object.values(obj));
+            
+            return `<p style="color:var(--blue); font-weight:bold; margin-bottom:5px;">Turno: ${titulo}</p>
+            <div class="column-chart-container" style="background:white; border-radius:12px; margin-bottom:20px;">` + 
+            entradas.map(([t, v]) => `
                 <div class="column-wrapper">
-                    <div style="font-size:10px;">${v}</div>
-                    <div class="column-bar" style="height:${(v/maxBar)*100}%"></div>
-                    <div class="column-label">${t}</div>
+                    <div style="font-size:11px; font-weight:bold; color:var(--blue);">${v}</div>
+                    <div class="column-bar" style="height:${(v/max)*100}%; width:25px; background:var(--blue);"></div>
+                    <div class="column-label" style="font-weight:bold; color:#555;">${t}</div>
                 </div>`).join('') + `</div>`;
+        };
+
+        // Renderiza turnos e alunos críticos
+        document.getElementById('graficoTurmas').innerHTML = montarGrafico(contManha, "Manhã") + montarGrafico(contTarde, "Tarde");
+        
+        const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10);
+        document.getElementById('resAlertaCritico').innerHTML = criticos.length ? 
+            criticos.map(a => `<div class="item-ocorrencia" style="border-left-color:red"><b>${a[0]}</b>: <span style="color:red">${a[1]} registros</span></div>`).join('') :
+            "<p style='text-align:center; color:#888; padding:10px;'>Nenhum aluno com mais de 10 ocorrências.</p>";
 
         // Gráfico de Pizza (Tipos)
         const total = Object.values(contTipos).reduce((a, b) => a + b, 0);
         let curr = 0;
+        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0"];
         const slices = Object.entries(contTipos).map(([lab, val], i) => {
             const p = (val/total)*100;
             const s = `${cores[i % cores.length]} ${curr}% ${curr + p}%`;
             curr += p;
             return s;
         });
-        document.getElementById('graficoPizzaTipos').innerHTML = `<p><b>Distribuição por Tipo:</b></p>
-            <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>`;
+        document.getElementById('graficoPizzaTipos').innerHTML = `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')}); margin: 20px auto;"></div>`;
 
     } catch (e) { alert("Erro ao carregar dashboard."); }
 }
@@ -670,6 +684,7 @@
 
 </body>
 </html>
+
 
 
 
