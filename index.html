@@ -601,10 +601,10 @@ async function gerarAlertaCritico() {
 
                 html += `<div class="item-ocorrencia">
                     <div style="float:right; display:flex; gap:8px;">
-                        ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Editar</button>` : ''}
+                        ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)">Editar</button>
                         
                         ${souGestor ? `
-                            <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Tratar</button>
+                            <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)">Tratar</button>
                             <button onclick="apagarRegistro('${r[0]}')" style="background:#d32f2f; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">X</button>
                         ` : ''}
                     </div>
@@ -793,6 +793,7 @@ async function gerarAlertaCritico() {
 
 </body>
 </html>
+
 
 
 
