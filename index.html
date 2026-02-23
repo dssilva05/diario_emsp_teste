@@ -556,37 +556,29 @@ async function gerarAlertaCritico() {
     // 1. Filtragem por Turma e Aluno (incluindo lógica de "Toda a Turma")
     let filtrados = data.filter(r => {
         const turmaBate = r[3] && String(r[3]).trim() === t;
-        // Se aluno não for selecionado, mostra apenas registros coletivos ("TODA A TURMA")
-        // Se aluno for selecionado, mostra apenas os dele
         const alunoBate = a ? (String(r[4]).trim() === a) : (String(r[4]).trim() === "TODA A TURMA");
         return turmaBate && alunoBate;
     });
 
-    // 2. Filtragem por Período (Trimestre)
-    if (p !== "Todos os Trimestres") {
-        filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
-    }
-
-    // 3. Filtragem por Professor (Dono do Registro)
+    // 2. Filtragem por Período e Professor
+    if (p !== "Todos os Trimestres") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
     if (!verTodos) {
-        // Pega o primeiro nome do professor logado (definido no login)
         const meuNome = profNomeLogado.split(" ")[0].toUpperCase();
         filtrados = filtrados.filter(r => String(r[2]).toUpperCase().includes(meuNome));
     }
 
-    // Ordenação por data (da mais recente para a mais antiga)
+    // 3. Ordenação Cronológica (Mais recente primeiro)
     filtrados.sort((m, n) => {
         const conv = (txt) => { const pt = txt.split('/'); return new Date(pt[2], pt[1]-1, pt[0]); };
         return conv(n[1]) - conv(m[1]);
     });
 
     if (filtrados.length === 0) { 
-        rDiv.innerHTML = `<p style="color:red; text-align:center; padding:20px;">Nenhum registro encontrado para este filtro.</p>`; 
+        rDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Nada encontrado para este filtro.</p>"; 
         return; 
     }
     
-    // Renderização do HTML (Mantendo sua estrutura de grupos por trimestre)
-    let html = `<h3>Visualizando: ${a || "Registros Coletivos (Turma " + t + ")"}</h3>`;
+    let html = `<h3>Histórico: ${a || "Toda a Turma " + t}</h3>`;
     let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
     
     filtrados.forEach(r => {
@@ -598,17 +590,30 @@ async function gerarAlertaCritico() {
         if (grupos[tri].length > 0) {
             html += `<div class="titulo-trimestre">${tri}</div>`;
             grupos[tri].forEach(r => {
-                const souDono = String(r[2]).includes(profNomeLogado.split(" ")[0]);
+                // RECUPERAÇÃO DAS PERMISSÕES
+                const souDono = String(r[2]).toUpperCase().includes(profNomeLogado.split(" ")[0].toUpperCase());
                 const souGestor = (cargoLogado === "Diretor");
                 
+                // Formatação das tratativas e avisos
+                const adv = (r[6] === "SIM") ? `<p style="color:red; font-weight:bold; margin:5px 0;">⚠️ Advertência por Escrito Enviada</p>` : "";
+                const trat = r[7] ? `<div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; margin-top:10px; font-size:13px;"><strong>Ação da Gestão:</strong> ${r[7]}</div>` : "";
+                const priv = (souGestor && r[8]) ? `<div style="background:#fff3e0; padding:10px; border:1px dashed #ff9800; margin-top:5px; font-size:12px;"><strong>🔒 Relato Privado:</strong> ${r[8]}</div>` : "";
+
                 html += `<div class="item-ocorrencia">
-                    <div style="float:right;">
-                        ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">Editar</button>` : ''}
+                    <div style="float:right; display:flex; gap:8px;">
+                        ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Editar</button>` : ''}
+                        
+                        ${souGestor ? `
+                            <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">Tratar</button>
+                            <button onclick="apagarRegistro('${r[0]}')" style="background:#d32f2f; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px;">X</button>
+                        ` : ''}
                     </div>
-                    <strong>${r[1]} - ${r[2]}</strong><br>
-                    <p>${r[5]}</p>
-                    ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold;">⚠️ Advertência Enviada</p>' : ''}
-                    ${r[7] ? `<div style="background:#e8f5e9; padding:8px; border-left:4px solid #4caf50; margin-top:5px;"><strong>Gestão:</strong> ${r[7]}</div>` : ''}
+                    
+                    <div style="margin-right:80px;">
+                        <strong>${r[1]} - ${r[2]}</strong><br>
+                        <p style="margin:10px 0; line-height:1.4; color:#333;">${r[5]}</p>
+                        ${adv}${trat}${priv}
+                    </div>
                 </div>`;
             });
         }
@@ -724,6 +729,7 @@ async function gerarAlertaCritico() {
 
 </body>
 </html>
+
 
 
 
