@@ -506,9 +506,11 @@
     filtrados.sort((m, n) => {
         const converter = (dataStr) => {
             const partes = dataStr.split('/');
+            // Cria o objeto Date (ano, mês-1, dia) para comparação numérica
             return new Date(partes[2], partes[1] - 1, partes[0]).getTime();
         };
-        return converter(n[1]) - converter(m[1]);
+        // m - n garante a ordem ASCENDENTE (mais antiga -> mais nova)
+        return converter(m[1]) - converter(n[1]);
     });
 
     if (filtrados.length === 0) { 
@@ -877,6 +879,7 @@
 
 </body>
 </html>
+
 
 
 
