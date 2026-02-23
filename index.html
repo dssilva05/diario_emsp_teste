@@ -68,8 +68,36 @@
     background: rgba(255,255,255,0.6); 
     border-radius: 8px; 
 }
-.column-bar { background: var(--blue); width: 22px; border-radius: 4px 4px 0 0; transition: 0.5s; border: 1px solid rgba(0,0,0,0.1); }
-.column-value { font-size: 11px; font-weight: bold; color: var(--blue); margin-bottom: 4px; }
+/* Garante que o círculo da pizza apareça */
+.pie-chart { 
+    width: 150px; 
+    height: 150px; 
+    border-radius: 50%; 
+    margin: 15px auto; 
+    border: 2px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    background: #f0f0f0; /* Cor de fundo caso o gradiente falhe */
+}
+
+/* Garante que as colunas apareçam */
+.column-bar { 
+    background-color: #0d47a1 !important; /* Força a cor azul */
+    width: 25px; 
+    border-radius: 4px 4px 0 0; 
+    transition: height 0.5s ease; 
+    min-height: 2px; /* Garante visibilidade mesmo com 1 registro */
+    display: block;
+}
+
+.column-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end; /* Alinha as barras na base */
+    height: 100%;
+    flex: 1;
+}
+        .column-value { font-size: 11px; font-weight: bold; color: var(--blue); margin-bottom: 4px; }
 .column-label { font-size: 10px; font-weight: bold; color: #333; margin-top: 8px; transform: rotate(-45deg); width: 30px; text-align: right; white-space: nowrap; }
         
         .titulo-trimestre { background: var(--gold); color: #000; padding: 8px 15px; margin-top: 25px; border-radius: 6px; font-weight: bold; border-left: 10px solid var(--blue); }
@@ -638,11 +666,11 @@
 }
 
     async function gerarAlertaCritico() {
-    if (!navigator.onLine) return alert("⚠️ Você está offline. Conecte-se para atualizar o Dashboard.");
+    if (!navigator.onLine) return alert("⚠️ Conecte-se para atualizar o Dashboard.");
     
     const dashboard = document.getElementById('resDashboard');
     dashboard.classList.remove('hidden');
-    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando dados...";
+    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando...";
     
     try {
         const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
@@ -662,41 +690,54 @@
                 if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
                 else contManha[turma] = (contManha[turma] || 0) + 1;
             }
-
             if (aluno && aluno !== "TODA A TURMA") {
                 const chave = `${aluno} (${turma})`;
                 contAlunos[chave] = (contAlunos[chave] || 0) + 1;
             }
-
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
             contTratativas[tratativa] = (contTratativas[tratativa] || 0) + 1;
         }
 
+        // Renderização de Colunas (Barras)
         const renderColunas = (obj, titulo) => {
             const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
             if (!entradas.length) return "";
             const max = Math.max(...Object.values(obj));
             let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
             entradas.forEach(([t, v]) => {
-                h += `<div class="column-wrapper"><div class="column-value">${v}</div><div class="column-bar" style="height:${(v/max)*100}%"></div><div class="column-label">${t}</div></div>`;
+                const altura = (v / max) * 100;
+                h += `<div class="column-wrapper">
+                        <div class="column-value">${v}</div>
+                        <div class="column-bar" style="height:${altura}%"></div>
+                        <div class="column-label">${t}</div>
+                      </div>`;
             });
             return h + `</div>`;
         };
 
+        // Renderização de Pizza (Círculo)
         const renderPizza = (obj, titulo) => {
             const dados = Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, 6);
             const total = Object.values(obj).reduce((a, b) => a + b, 0);
+            if (total === 0) return "";
+            
             let curr = 0;
             const slices = dados.map(([lab, val], idx) => {
-                const p = (val/total)*100;
-                const s = `${cores[idx % cores.length]} ${curr}% ${curr+p}%`;
+                const p = (val / total) * 100;
+                // Formatação rigorosa para o conic-gradient
+                const s = `${cores[idx % cores.length]} ${curr.toFixed(2)}% ${(curr + p).toFixed(2)}%`;
                 curr += p;
                 return { label: lab, val: val, color: cores[idx % cores.length], slice: s };
             });
-            let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b><div class="pie-chart" style="background: conic-gradient(${slices.map(s=>s.slice).join(',')})"></div><ul class="pie-legend">`;
-            slices.forEach(s => h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`);
+
+            let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b>`;
+            h += `<div class="pie-chart" style="background: conic-gradient(${slices.map(s => s.slice).join(', ')})"></div>`;
+            h += `<ul class="pie-legend">`;
+            slices.forEach(s => {
+                h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`;
+            });
             return h + `</ul>`;
         };
 
@@ -704,6 +745,7 @@
         document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
         document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
         
+        // Tabela de Alunos Críticos
         const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10).sort((a,b) => b[1] - a[1]);
         let hAlert = '<table style="width:100%; border-collapse:collapse; font-size:12px; background:white; border-radius:8px; overflow:hidden;">';
         if (criticos.length === 0) {
@@ -750,6 +792,7 @@
 
 </body>
 </html>
+
 
 
 
