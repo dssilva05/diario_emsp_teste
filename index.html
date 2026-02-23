@@ -801,9 +801,41 @@
         b.classList.toggle('hidden', t !== "📝 Ocorrência Disciplinar" || a === "TODA A TURMA");
     }
 
-    function tab(n) { [1,2,3].forEach(i => { document.getElementById('aba'+i).classList.toggle('hidden', n !== i); document.getElementById('t'+i).classList.toggle('active', n === i); }); }
+    function tab(n) {
+    [1, 2, 3].forEach(i => {
+        document.getElementById('aba' + i).classList.toggle('hidden', n !== i);
+        document.getElementById('t' + i).classList.toggle('active', n === i);
+    });
+
+    // Se o usuário clicar na Aba 1 (Incluir) e NÃO estiver editando nada, limpa o rastro
+    if (n === 1 && !idEditando) {
+        limparForm();
+    }
+}
     function definirDataHoje() { document.getElementById('dataOcorrenciaManual').value = new Date().toISOString().split('T')[0]; }
-    function limparForm() { document.getElementById('relatoTexto').value = ""; idEditando = null; document.getElementById('btnGravar').innerText = "Gravar"; definirDataHoje(); document.getElementById('containerTratativa').innerHTML = ""; }
+    function limparForm() {
+    // 1. Limpa os campos visíveis
+    document.getElementById('relatoTexto').value = "";
+    document.getElementById('containerTratativa').innerHTML = "";
+    document.getElementById('containerTratativa').classList.add('hidden');
+    
+    // 2. Reseta o controle de edição
+    idEditando = null;
+    document.getElementById('btnGravar').innerText = "Gravar no Diário";
+    
+    // 3. LIMPA AS VARIÁVEIS DE MEMÓRIA (O erro está aqui!)
+    window.tratativaAntiga = "";
+    window.relatoGestaoAntigo = "";
+    window.tratativaAtual = "";      // Limpa também as variações de nome
+    window.relatoGestaoAtual = "";
+
+    // 4. Reseta a data para hoje
+    definirDataHoje();
+    
+    // 5. Volta o select de tipo para o padrão
+    document.getElementById('selTipoRegistro').value = "📝 Ocorrência Disciplinar";
+    ajustarCamposRegistro();
+}
     function logout() { localStorage.removeItem('diarioAcessoSobral'); location.reload(); }
     function toggleSenha(id, ic) { const p = document.getElementById(id), i = document.getElementById(ic); p.type = p.type === "password" ? "text" : "password"; i.innerText = p.type === "password" ? "👁️" : "🙈"; }
     function identificarTrimestre(ds) { 
@@ -819,6 +851,7 @@
 
 </body>
 </html>
+
 
 
 
