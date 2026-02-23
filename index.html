@@ -67,6 +67,29 @@
         .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 70vh; padding: 20px; }
         .box-auth { background: var(--glass); padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); width: 100%; max-width: 350px; text-align: center; backdrop-filter: blur(10px); }
         .box-auth input { margin-bottom: 15px; border: 1px solid #ddd; }
+        /* Correção do alinhamento visual dos filtros */
+.filtro-item {
+    display: flex;
+    align-items: center; /* Garante que o checkbox e o texto fiquem na mesma linha central */
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 12px;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.filtro-item:hover {
+    background: rgba(13, 71, 161, 0.05); /* Efeito suave ao passar o mouse */
+}
+
+.filtro-item input {
+    width: 20px;
+    height: 20px;
+    margin: 0 12px 0 0; /* Espaço exato à direita da caixinha */
+    cursor: pointer;
+    flex-shrink: 0; /* Impede que a caixinha "esmague" em telas pequenas */
+}
 
         /* Outros */
         .titulo-trimestre { background: var(--gold); color: #000; padding: 8px 15px; margin-top: 25px; border-radius: 6px; font-weight: bold; border-left: 10px solid var(--blue); }
@@ -163,9 +186,15 @@
                 <option value="3º Trimestre">3º Trimestre</option>
             </select>
             <div class="filtro-box">
-                <label class="filtro-item"><input type="checkbox" id="chkMeusRegistros" checked onclick="alternarCheckboxes('meu')"> Ver apenas meus registros</label>
-                <label class="filtro-item"><input type="checkbox" id="chkTodosRegistros" onclick="alternarCheckboxes('todos')"> Ver todas as ocorrências</label>
-            </div>
+    <label class="filtro-item">
+        <input type="checkbox" id="chkMeusRegistros" checked onclick="alternarCheckboxes('meu')"> 
+        <span>Ver apenas meus registros</span>
+    </label>
+    <label class="filtro-item">
+        <input type="checkbox" id="chkTodosRegistros" onclick="alternarCheckboxes('todos')"> 
+        <span>Ver todas as ocorrências</span>
+    </label>
+</div>
             <button class="btn-main" onclick="consultarHistorico()">🔍 Buscar Histórico</button>
             <div id="resConsulta"></div>
             <button class="btn-main" id="btnImp" style="background:#444; display:none; margin-top:20px" onclick="window.print()">🖨️ PDF / Imprimir</button>
@@ -576,6 +605,7 @@ window.addEventListener('load', atualizarStatusRede);
 
 </body>
 </html>
+
 
 
 
