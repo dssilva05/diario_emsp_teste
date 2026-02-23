@@ -289,22 +289,27 @@
     }
 
     // --- LÓGICA DE PRESERVAÇÃO DA TRATATIVA ---
-    let tratativaParaSalvar = "";
-    let relatoGestaoParaSalvar = "";
+    let tratativaFinal = "";
+    let relatoGestaoFinal = "";
 
     if (cargoLogado === "Diretor") {
-        // Se for Diretor, ele pega o que está nos campos da tela (pode estar editando a tratativa)
         const selT = document.getElementById('selTratativa');
         const dtC = document.getElementById('dataConvocacao');
         const rG = document.getElementById('relatoGestaoTexto');
 
         if (selT && selT.value) {
-            tratativaParaSalvar = selT.value;
-            if (tratativaParaSalvar === "Família Convocada" && dtC && dtC.value) {
+            tratativaFinal = selT.value;
+            if (tratativaFinal === "Família Convocada" && dtC && dtC.value) {
                 const dataFormatada = dtC.value.split('-').reverse().join('/');
-                tratativaParaSalvar += ` (Data: ${dataFormatada})`;
+                tratativaFinal += ` (Data: ${dataFormatada})`;
             }
+        } else {
+            // Se o Diretor está apenas editando o relato e não mexeu na tratativa, mantém a antiga
+            tratativaFinal = window.tratativaAntiga || "";
         }
+
+        relatoGestaoFinal = (rG && rG.offsetParent !== null) ? rG.value : (window.relatoGestaoAntigo || "");
+        
         if (rG) relatoGestaoParaSalvar = rG.value;
     } else {
         // Se for PROFESSOR, ele recupera o que já estava salvo antes de abrir a edição
@@ -322,8 +327,8 @@
         aluno: aVal,
         texto: rVal,
         advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
-        tratativa: tratativaParaSalvar,
-        relatoGestao: relatoGestaoParaSalvar
+        tratativa: tratativaFinal,
+        relatoGestao: relatoGestaoFinal
     };
 
     const btn = document.getElementById('btnGravar');
@@ -461,10 +466,10 @@
 }
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
-    // SALVA OS DADOS ATUAIS EM VARIÁVEIS GLOBAIS PARA NÃO PERDER NA GRAVAÇÃO
-    window.tratativaAtual = tratativa;
-    window.relatoGestaoAtual = relatoGestao;
-    
+    // ESTAS DUAS LINHAS SÃO A CHAVE PARA NÃO SUMIR:
+    window.tratativaAntiga = tratativa || "";
+    window.relatoGestaoAntigo = relatoGestao || "";
+
     idEditando = id; 
     tab(1);
     
@@ -630,6 +635,7 @@
 
 </body>
 </html>
+
 
 
 
