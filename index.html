@@ -106,29 +106,58 @@
         .modal-ajuda { position: fixed; bottom: 90px; right: 20px; width: 280px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 9999; }
     
     @media print {
-        body { 
-            -webkit-print-color-adjust: exact !important; 
-            print-color-adjust: exact !important; 
-            background: white !important; 
-        }
-        header, .tabs, .btn-main, .btn-ajuda-fixo, .filtro-box, select { 
-            display: none !important; 
-        }
-        .container { 
-            max-width: 100% !important; 
-            margin: 0 !important; 
-            padding: 0 !important; 
-        }
-        .card { 
-            box-shadow: none !important; 
-            background: white !important; 
-        }
-        .item-ocorrencia { 
-            border: 1px solid #ccc !important; 
-            page-break-inside: avoid; 
-            margin-bottom: 10px !important;
-        }
+    /* 1. Configurações gerais de cor e fundo */
+    body { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        background: white !important; 
     }
+
+    /* 2. ESCONDE TUDO O QUE NÃO É CABEÇALHO OU HISTÓRICO */
+    /* Isso inclui abas, botões, selects, checkboxes e o botão Sair */
+    .tabs, 
+    .btn-main, 
+    .btn-ajuda-fixo, 
+    #aba2 select, 
+    #aba2 .filtro-box, 
+    #aba2 button,
+    .btn-olho { 
+        display: none !important; 
+    }
+
+    /* 3. Ajusta o container para ocupar a folha inteira */
+    .container { 
+        max-width: 100% !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+    }
+
+    .card { 
+        box-shadow: none !important; 
+        background: white !important; 
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    /* 4. Melhora a aparência do histórico impresso */
+    .item-ocorrencia { 
+        border: 1px solid #eee !important; 
+        page-break-inside: avoid; 
+        margin-bottom: 15px !important;
+        padding: 10px !important;
+    }
+
+    /* Garante que o cabeçalho da escola apareça no topo */
+    header {
+        display: flex !important;
+        background: white !important;
+        color: black !important;
+        border-bottom: 2px solid #0d47a1 !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .escola-txt h1 { color: #0d47a1 !important; }
+}
     
     </style>
 </head>
@@ -930,6 +959,7 @@
 
 </body>
 </html>
+
 
 
 
