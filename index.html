@@ -332,42 +332,80 @@
     }
 
     function exibirDados(data, t, a, p) {
-        const rDiv = document.getElementById('resConsulta'), verTodos = document.getElementById('chkTodosRegistros').checked;
-        let filtrados = data.filter(r => (r[3] && String(r[3]).trim() === t) && (a ? (String(r[4]).trim() === a) : (String(r[4]).trim() === "TODA A TURMA")));
-        if (p !== "Todos os Trimestres") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
-        if (!verTodos) filtrados = filtrados.filter(r => String(r[2]).toUpperCase().includes(profNomeLogado.split(" ")[0].toUpperCase()));
+    const rDiv = document.getElementById('resConsulta');
+    const verTodos = document.getElementById('chkTodosRegistros').checked;
+    
+    // 1. Filtragem por Turma e Aluno
+    let filtrados = data.filter(r => {
+        const turmaBate = r[3] && String(r[3]).trim() === t;
+        const alunoBate = a ? (String(r[4]).trim() === a) : (String(r[4]).trim() === "TODA A TURMA");
+        return turmaBate && alunoBate;
+    });
 
-        filtrados.sort((m, n) => {
-            const c = (t) => { let x = t.split('/'); return new Date(x[2], x[1]-1, x[0]); };
-            return c(n[1]) - c(m[1]);
-        });
-
-        if (filtrados.length === 0) { rDiv.innerHTML = "Nada encontrado."; return; }
-        
-        let html = `<h3>Histórico: ${a || "Toda a Turma"}</h3>`;
-        let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
-        filtrados.forEach(r => { let tri = identificarTrimestre(r[1]); if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r); });
-
-        for (let tri in grupos) {
-            if (grupos[tri].length > 0) {
-                html += `<div class="titulo-trimestre">${tri}</div>`;
-                grupos[tri].forEach(r => {
-                    const souDono = String(r[2]).toUpperCase().includes(profNomeLogado.split(" ")[0].toUpperCase());
-                    const souGestor = (cargoLogado === "Diretor");
-                    html += `<div class="item-ocorrencia">
-                        <div style="float:right; display:flex; gap:5px;">
-                            ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Editar</button>` : ''}
-                            ${souGestor ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Tratar</button>
-                                           <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">X</button>` : ''}
-                        </div>
-                        <strong>${r[1]} - ${r[2]}</strong><p>${r[5]}</p>
-                        ${r[7] ? `<div style="background:#e8f5e9; padding:8px; border-left:4px solid #4caf50; font-size:12px;"><strong>Gestão:</strong> ${r[7]}</div>` : ""}
-                    </div>`;
-                });
-            }
-        }
-        rDiv.innerHTML = html; document.getElementById('btnImp').style.display = "block";
+    // 2. Filtros de Trimestre e Dono do Registro
+    if (p !== "Todos os Trimestres") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
+    if (!verTodos) {
+        const meuNome = profNomeLogado.split(" ")[0].toUpperCase();
+        filtrados = filtrados.filter(r => String(r[2]).toUpperCase().includes(meuNome));
     }
+
+    // 3. Ordenação (Mais recente primeiro)
+    filtrados.sort((m, n) => {
+        const c = (t) => { let x = t.split('/'); return new Date(x[2], x[1]-1, x[0]); };
+        return c(n[1]) - c(m[1]);
+    });
+
+    if (filtrados.length === 0) { rDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Nada encontrado.</p>"; return; }
+    
+    let html = `<h3>Histórico: ${a || "Toda a Turma " + t}</h3>`;
+    let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
+    filtrados.forEach(r => { let tri = identificarTrimestre(r[1]); if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r); });
+
+    for (let tri in grupos) {
+        if (grupos[tri].length > 0) {
+            html += `<div class="titulo-trimestre">${tri}</div>`;
+            grupos[tri].forEach(r => {
+                const souDono = String(r[2]).toUpperCase().includes(profNomeLogado.split(" ")[0].toUpperCase());
+                const souGestor = (cargoLogado === "Diretor");
+
+                // --- LÓGICA DE EXIBIÇÃO DA TRATATIVA ---
+                let textoTratativa = r[7] || "";
+                let avisoDataReuniao = "";
+
+                // Se houver data de reunião no texto da tratativa, ela deve aparecer para TODOS
+                if (textoTratativa.includes("(Data:")) {
+                    const matchData = textoTratativa.match(/\d{2}\/\d{2}\/\d{4}/);
+                    if (matchData) {
+                        avisoDataReuniao = `<p style="color:#e65100; font-weight:bold; margin-top:5px;">📅 Reunião agendada para: ${matchData[0]}</p>`;
+                    }
+                }
+
+                // Relato Privado: Aparece apenas se for Gestor
+                const relatoPrivadoHTML = (souGestor && r[8]) ? 
+                    `<div style="background:#fff3e0; padding:10px; border:1px dashed #ff9800; margin-top:8px; font-size:12px; color:#e65100;">
+                        <strong>🔒 Relato Privado (Gestão):</strong> ${r[8]}
+                    </div>` : "";
+
+                html += `<div class="item-ocorrencia">
+                    <div style="float:right; display:flex; gap:5px;">
+                        ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Editar</button>` : ''}
+                        ${souGestor ? `
+                            <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Tratar</button>
+                            <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">X</button>
+                        ` : ''}
+                    </div>
+                    <strong>${r[1]} - ${r[2]}</strong>
+                    <p style="margin:10px 0;">${r[5]}</p>
+                    ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>' : ''}
+                    ${textoTratativa ? `<div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; font-size:13px;"><strong>Ação da Gestão:</strong> ${textoTratativa} ${avisoDataReuniao}</div>` : ''}
+                    ${relatoPrivadoHTML}
+                </div>`;
+            });
+        }
+    }
+    rDiv.innerHTML = html;
+    document.getElementById('btnImp').style.display = "block";
+}
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
     idEditando = id; 
@@ -532,6 +570,7 @@
 
 </body>
 </html>
+
 
 
 
