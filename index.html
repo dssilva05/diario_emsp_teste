@@ -371,9 +371,9 @@
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
     idEditando = id; 
-    tab(1); // Vai para a aba de formulário
+    tab(1); 
     
-    // Converte data para o campo input date
+    // Ajuste da data principal
     const p = data.split('/');
     if(p.length === 3) document.getElementById('dataOcorrenciaManual').value = `${p[2]}-${p[1]}-${p[0]}`;
     
@@ -389,52 +389,57 @@
     const cont = document.getElementById('containerTratativa');
     
     if (cargoLogado === "Diretor" && focarTratativa === true) {
-        // 1. Extrair a opção de tratativa e a data da string salva
-        // Exemplo de tratativa: "Família Convocada (Data: 25/02/2026)"
+        // Extração precisa da data da convocação
         let opcaoLimpa = tratativa.split(" (Data:")[0].trim();
-        let dataInputFormat = "";
+        let dataParaInput = "";
         
         if (tratativa.includes("(Data:")) {
-            const match = tratativa.match(/\d{2}\/\d{2}\/\d{4}/);
-            if (match) {
-                // Converte DD/MM/AAAA para AAAA-MM-DD para o input date
-                dataInputFormat = match[0].split('/').reverse().join('-');
+            const extrair = tratativa.match(/\d{2}\/\d{2}\/\d{4}/);
+            if (extrair) {
+                dataParaInput = extrair[0].split('/').reverse().join('-');
             }
         }
 
-        // 2. Montar o HTML garantindo que os valores apareçam
         cont.innerHTML = `
             <div style="background:#f0f7ff; padding:15px; border-radius:8px; margin-top:15px; border:1px solid #1976d2;">
                 <label style="color:#1976d2; font-weight:bold;">🛠️ Espaço da Gestão (Tratativa)</label>
                 
-                <select id="selTratativa" onchange="verificarDataConvocacao()" style="margin-top:10px;">
+                <select id="selTratativa" onchange="verificarDataConvocacao()" style="width:100%; margin-top:8px;">
                     <option value="">Selecione a ação...</option>
-                    <option value="Conversa com o Aluno" ${opcaoLimpa === "Conversa com o Aluno" ? "selected" : ""}>Conversa com o Aluno</option>
-                    <option value="Advertência Verbal" ${opcaoLimpa === "Advertência Verbal" ? "selected" : ""}>Advertência Verbal</option>
-                    <option value="Advertência por Escrito" ${opcaoLimpa === "Advertência por Escrito" ? "selected" : ""}>Advertência por Escrito</option>
-                    <option value="Família Convocada" ${opcaoLimpa === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
-                    <option value="Encaminhamento PAS" ${opcaoLimpa === "Encaminhamento PAS" ? "selected" : ""}>Encaminhamento PAS</option>
+                    <option value="Conversa com o Aluno">Conversa com o Aluno</option>
+                    <option value="Advertência Verbal">Advertência Verbal</option>
+                    <option value="Advertência por Escrito">Advertência por Escrito</option>
+                    <option value="Família Convocada">Família Convocada</option>
+                    <option value="Encaminhamento PAS">Encaminhamento PAS</option>
                 </select>
 
-                <div id="divDataConvocacao" style="display:${opcaoLimpa === "Família Convocada" ? "block" : "none"}; margin-top:10px;">
+                <div id="divDataConvocacao" style="display:none; margin-top:10px;">
                     <label>📅 Data da Reunião:</label>
-                    <input type="date" id="dataConvocacao" value="${dataInputFormat}">
+                    <input type="date" id="dataConvocacao" style="width:100%;">
                 </div>
 
                 <label style="display:block; margin-top:15px;">🔒 Relato Interno (Privado):</label>
-                <textarea id="relatoGestaoTexto" rows="3" placeholder="Anotações exclusivas da gestão...">${relatoGestao || ""}</textarea>
+                <textarea id="relatoGestaoTexto" rows="3" style="width:100%;" placeholder="Anotações da gestão..."></textarea>
             </div>`;
         
         cont.classList.remove('hidden');
-        
+
+        // IMPORTANTE: Atribuir valores APÓS criar o HTML acima
         setTimeout(() => {
+            document.getElementById('selTratativa').value = opcaoLimpa;
+            document.getElementById('relatoGestaoTexto').value = relatoGestao || "";
+            
+            if (opcaoLimpa === "Família Convocada") {
+                document.getElementById('divDataConvocacao').style.display = 'block';
+                document.getElementById('dataConvocacao').value = dataParaInput;
+            }
             document.getElementById('selTratativa').focus();
-        }, 300);
+        }, 50);
+
     } else {
         cont.innerHTML = "";
         cont.classList.add('hidden');
     }
-    
     document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
 }
 
@@ -527,6 +532,7 @@
 
 </body>
 </html>
+
 
 
 
