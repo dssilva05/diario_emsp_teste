@@ -321,6 +321,43 @@
         }
     }
 
+
+    // Função para alternar entre as telas de Login e Recuperação
+function irPara(idTela) {
+    // Esconde as duas telas primeiro
+    document.getElementById('telaLogin').classList.add('hidden');
+    document.getElementById('telaRecuperar').classList.add('hidden');
+    
+    // Mostra apenas a tela desejada
+    document.getElementById(idTela).classList.remove('hidden');
+}
+
+// Função para processar a alteração de senha
+async function executarRecuperacao() {
+    const nome = document.getElementById('recNome').value;
+    const bm = document.getElementById('recBM').value;
+    const novaSenha = document.getElementById('recNovaPass').value;
+
+    if (!nome || !bm || !novaSenha) {
+        return alert("⚠️ Preencha todos os campos para alterar a senha.");
+    }
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=recuperar&nome=${nome}&bm=${bm}&novaSenha=${novaSenha}`);
+        const d = await res.json();
+        
+        if (d.status === "Sucesso") {
+            alert("✅ Senha alterada com sucesso! Faça login agora.");
+            irPara('telaLogin');
+        } else {
+            alert("❌ Dados não conferem. Verifique o Nome e BM.");
+        }
+    } catch (e) {
+        alert("Erro de conexão ao tentar alterar a senha.");
+    }
+}
+
+    
     function alternarCheckboxes(quem) {
     const cMeu = document.getElementById('chkMeusRegistros');
     const cTodos = document.getElementById('chkTodosRegistros');
@@ -959,6 +996,7 @@
 
 </body>
 </html>
+
 
 
 
