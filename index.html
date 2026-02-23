@@ -400,6 +400,43 @@
     }
     document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
 }
+
+    async function apagarRegistro(id) {
+    // 1. A exclusão é uma ação crítica, por isso exige internet para atualizar o banco de dados
+    if (!navigator.onLine) {
+        return alert("⚠️ A exclusão de registros exige conexão com a internet para atualizar o banco de dados da escola.");
+    }
+
+    // 2. Confirmação de segurança para evitar cliques acidentais
+    if (!confirm("Tem certeza que deseja excluir este registro definitivamente? Esta ação não pode ser desfeita.")) {
+        return;
+    }
+
+    const btn = event.target; // Captura o botão clicado
+    const textoOriginal = btn.innerText;
+    btn.innerText = "⏳...";
+    btn.disabled = true;
+
+    try {
+        const p = new URLSearchParams();
+        p.append('acao', 'apagarOcorrencia');
+        p.append('id', id);
+
+        // Envia o pedido para o SCRIPT_URL definido no topo do código
+        const res = await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+        
+        alert("Registro excluído com sucesso!");
+        
+        // Atualiza a lista na tela para o registro sumir imediatamente
+        consultarHistorico(); 
+    } catch (e) {
+        console.error("Erro ao excluir:", e);
+        alert("Ocorreu um erro ao tentar excluir o registro no servidor.");
+        btn.innerText = textoOriginal;
+        btn.disabled = false;
+    }
+}
+    
     function verificarDataConvocacao() {
         const s = document.getElementById('selTratativa')?.value, d = document.getElementById('divDataConvocacao');
         if(d) d.style.display = (s === "Família Convocada") ? "block" : "none";
@@ -453,6 +490,7 @@
 
 </body>
 </html>
+
 
 
 
