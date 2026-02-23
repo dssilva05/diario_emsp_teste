@@ -147,19 +147,27 @@
         </div>
 
         <div id="aba3" class="hidden">
-            <h2 style="color:var(--blue); margin-top:0;">📊 Controle Geral</h2>
-            <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar dashboard</button>
-            <div id="resDashboard" class="hidden">
-                <div class="dashboard-title">Alunos Críticos (+10)</div>
-                <div id="resAlertaCritico"></div>
-                <div class="dashboard-title">Ocorrências por Turma</div>
-                <div id="graficoTurmas"></div>
-                <div class="pie-charts-wrapper">
-                    <div id="graficoPizzaTipos" class="pie-container"></div>
-                    <div id="graficoPizzaTratativas" class="pie-container"></div>
-                </div>
-            </div>
-        </div>
+    <h2 style="color:var(--blue); margin-top:0;">📊 Controle Geral de Ocorrências</h2>
+    <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar ocorrências</button>
+    <div id="resDashboard" class="hidden">
+        <div class="dashboard-title">Alunos Críticos (+10 ocorrências)</div>
+        <div id="resAlertaCritico"></div>
+
+        <div class="dashboard-title">Ocorrências por Turma</div>
+        <div id="graficoTurmas"></div>
+
+        <div class="dashboard-title">Alunos com mais ocorrências</div>
+        <div id="tabelaTopAlunos"></div>
+
+        <div class="dashboard-title">Ocorrências (Geral)</div>
+<div class="pie-charts-wrapper">
+    <div id="graficoPizzaTipos" class="pie-container"></div>
+    <div id="graficoPizzaTratativas" class="pie-container"></div>
+</div>
+    </div>
+</div>
+    </div>
+</div>
     </div>
 </div>
 
@@ -694,6 +702,7 @@
 
 </body>
 </html>
+
 
 
 
