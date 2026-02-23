@@ -12,6 +12,38 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="#0d47a1">
 
+    @media print {
+    /* Força o navegador a imprimir cores e fundos */
+    body { 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+        background: white !important; /* Remove o fundo escuro na impressão */
+    }
+
+    /* Esconde elementos desnecessários (botões, abas, cabeçalho da escola) */
+    header, .tabs, .btn-main, .btn-ajuda-fixo, .filtro-box, select { 
+        display: none !important; 
+    }
+
+    /* Ajusta o container para ocupar a folha toda */
+    .container { 
+        max-width: 100% !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+    }
+
+    .card { 
+        box-shadow: none !important; 
+        background: white !important; 
+    }
+
+    /* Garante que as ocorrências sejam visíveis e tenham bordas */
+    .item-ocorrencia { 
+        border: 1px solid #ccc !important; 
+        page-break-inside: avoid; /* Evita cortar uma ocorrência no meio da página */
+        margin-bottom: 10px !important;
+    }
+}
     <style>
         :root { --blue: #0d47a1; --gold: #ffd600; --glass: rgba(255, 255, 255, 0.95); }
     body { font-family: 'Segoe UI', sans-serif; margin: 0; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80') center/cover fixed; min-height: 100vh; }
@@ -904,6 +936,7 @@
 
 </body>
 </html>
+
 
 
 
