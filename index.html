@@ -456,35 +456,29 @@
     }
 
     async function consultarHistorico() {
-        const t = document.getElementById('selTurmaCons').value, a = document.getElementById('selAlunoCons').value;
-        if (!t) return alert("Selecione a Turma.");
-        const rDiv = document.getElementById('resConsulta'); rDiv.innerHTML = "Buscando...";
-        try {
-    const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
-    let dadosPlanilha = await res.json();
+    const t = document.getElementById('selTurmaCons').value, 
+          a = document.getElementById('selAlunoCons').value,
+          p = document.getElementById('selPeriodoCons').value;
 
-    // Remove o cabeçalho
-    dadosPlanilha.shift();
+    if (!t) return alert("Selecione a Turma.");
+    
+    const rDiv = document.getElementById('resConsulta'); 
+    rDiv.innerHTML = "Buscando...";
 
-    // ORDENAÇÃO CRONOLÓGICA (Mais recentes primeiro)
-    dadosPlanilha.sort((a, b) => {
-        const dataA = converterParaDataObjeto(a[1]); // Assumindo que a coluna 1 é a data
-        const dataB = converterParaDataObjeto(b[1]);
-        return dataB - dataA; // Troque para dataA - dataB se quiser as mais antigas primeiro
-    });
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
+        let dadosPlanilha = await res.json();
 
-    // Agora organize por trimestres para exibição
-    let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Outros": [] };
+        // Remove o cabeçalho
+        dadosPlanilha.shift();
 
-    dadosPlanilha.forEach(linha => {
-        const tri = identificarTrimestre(linha[1]); // Sua função de data que corrigimos antes
-        if (grupos[tri]) {
-            grupos[tri].push(linha);
-        } else {
-            grupos[tri] = [linha];
-        }
-    });
-       }
+        // CHAMA A FUNÇÃO DE EXIBIÇÃO (O que faltava!)
+        exibirDados(dadosPlanilha, t, a, p);
+
+    } catch (e) {
+        console.error(e);
+        rDiv.innerHTML = "Erro ao carregar dados.";
+    }
 }
 
     function exibirDados(data, t, a, p) {
@@ -883,6 +877,7 @@
 
 </body>
 </html>
+
 
 
 
