@@ -406,15 +406,20 @@
                 const souDono = String(r[2]).toUpperCase().includes(profNomeLogado.split(" ")[0].toUpperCase());
                 const souGestor = (cargoLogado === "Diretor");
 
-                // --- LÓGICA DE EXIBIÇÃO DA TRATATIVA ---
-                let textoTratativa = r[7] || "";
+                // --- LÓGICA DE EXIBIÇÃO DA TRATATIVA COM LIMPEZA ---
+                let textoTratativaBruto = r[7] || "";
+                let textoExibicao = textoTratativaBruto;
                 let avisoDataReuniao = "";
 
-                // Se houver data de reunião no texto da tratativa, ela deve aparecer para TODOS
-                if (textoTratativa.includes("(Data:")) {
-                    const matchData = textoTratativa.match(/\d{2}\/\d{2}\/\d{4}/);
+                // Verifica se há data de reunião para destacar e limpar o texto
+                if (textoTratativaBruto.includes("(Data:")) {
+                    const matchData = textoTratativaBruto.match(/\d{2}\/\d{2}\/\d{4}/);
                     if (matchData) {
-                        avisoDataReuniao = `<p style="color:#e65100; font-weight:bold; margin-top:5px;">📅 Reunião agendada para: ${matchData[0]}</p>`;
+                        // Cria a linha de destaque visual para todos
+                        avisoDataReuniao = `<p style="color:#e65100; font-weight:bold; margin-top:5px; margin-bottom:0;">📅 Reunião agendada para: ${matchData[0]}</p>`;
+                        
+                        // Limpa o texto original removendo o parêntese com a data para não repetir
+                        textoExibicao = textoTratativaBruto.replace(/\s\(Data:.*?\)/g, "");
                     }
                 }
 
@@ -435,7 +440,13 @@
                     <strong>${r[1]} - ${r[2]}</strong>
                     <p style="margin:10px 0;">${r[5]}</p>
                     ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>' : ''}
-                    ${textoTratativa ? `<div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; font-size:13px;"><strong>Ação da Gestão:</strong> ${textoTratativa} ${avisoDataReuniao}</div>` : ''}
+                    
+                    ${textoTratativaBruto ? `
+                        <div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; font-size:13px;">
+                            <strong>Ação da Gestão:</strong> ${textoExibicao}
+                            ${avisoDataReuniao}
+                        </div>` : ''}
+                    
                     ${relatoPrivadoHTML}
                 </div>`;
             });
@@ -611,6 +622,7 @@
 
 </body>
 </html>
+
 
 
 
