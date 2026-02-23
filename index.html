@@ -597,79 +597,46 @@
 }
 
     async function gerarAlertaCritico() {
-    if (!navigator.onLine) return alert("⚠️ Conecte-se para atualizar os dados do Dashboard.");
-    
-    const dashboard = document.getElementById('resDashboard');
-    dashboard.classList.remove('hidden');
-    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando...";
+    if (!navigator.onLine) return alert("Conecte-se para atualizar.");
+    document.getElementById('resDashboard').classList.remove('hidden');
     
     try {
         const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
         const data = await res.json();
+        let contAlunos = {}, contTipos = {}, contTurmas = {};
+        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0"];
 
-        let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {};
-        const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
-        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800"];
-
-        // Processamento dos dados (pula cabeçalho i=0)
         for (let i = 1; i < data.length; i++) {
-            const tipoRaw = data[i][2] || "";
+            const tipo = (data[i][2] || "").match(/\[(.*?)\]/)?.[1] || "Outros";
             const turma = data[i][3];
             const aluno = data[i][4];
 
-            if (turma) {
-                if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
-                else contManha[turma] = (contManha[turma] || 0) + 1;
-            }
-
-            if (aluno && aluno !== "TODA A TURMA") {
-                const chave = `${aluno} (${turma})`;
-                contAlunos[chave] = (contAlunos[chave] || 0) + 1;
-            }
-
-            const m = tipoRaw.match(/\[(.*?)\]/);
-            const tipo = m ? m[1] : "Outros";
+            if (turma) contTurmas[turma] = (contTurmas[turma] || 0) + 1;
+            if (aluno && aluno !== "TODA A TURMA") contAlunos[aluno] = (contAlunos[aluno] || 0) + 1;
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
         }
 
-        // --- RENDERIZAR PIZZA (Tipos de Ocorrência) ---
-        const renderPizza = (obj) => {
-            const entries = Object.entries(obj).sort((a,b) => b[1] - a[1]);
-            const total = entries.reduce((acc, cur) => acc + cur[1], 0);
-            let current = 0;
-            const slices = entries.map(([lab, val], idx) => {
-                const p = (val/total)*100;
-                const s = `${cores[idx % cores.length]} ${current}% ${current + p}%`;
-                current += p;
-                return s;
-            });
-            return `<div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>`;
-        };
-        document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos);
+        // Gráfico de Barras (Turmas)
+        const maxBar = Math.max(...Object.values(contTurmas));
+        document.getElementById('graficoTurmas').innerHTML = `<p><b>Ocorrências por Turma:</b></p><div class="column-chart-container">` + 
+            Object.entries(contTurmas).map(([t, v]) => `
+                <div class="column-wrapper">
+                    <div style="font-size:10px;">${v}</div>
+                    <div class="column-bar" style="height:${(v/maxBar)*100}%"></div>
+                    <div class="column-label">${t}</div>
+                </div>`).join('') + `</div>`;
 
-        // --- RENDERIZAR COLUNAS (Turmas) ---
-        const renderColunas = (obj, titulo) => {
-            const entries = Object.entries(obj).sort();
-            if (entries.length === 0) return "";
-            const max = Math.max(...Object.values(obj));
-            let h = `<p><b>${titulo}</b></p><div class="column-chart-container">`;
-            entries.forEach(([t, v]) => {
-                const altura = (v / max) * 100;
-                h += `<div class="column-wrapper">
-                        <div class="column-value">${v}</div>
-                        <div class="column-bar" style="height:${altura}%"></div>
-                        <div class="column-label">${t}</div>
-                      </div>`;
-            });
-            return h + `</div>`;
-        };
-        document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
-
-        // --- ALUNOS CRÍTICOS ---
-        const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10).sort((a,b) => b[1] - a[1]);
-        document.getElementById('resAlertaCritico').innerHTML = criticos.length ? 
-            criticos.map(a => `<div class="item-ocorrencia" style="border-left-color:red"><b>${a[0]}</b>: <span style="color:red">${a[1]} registros</span></div>`).join('') :
-            "Nenhum aluno com +10 ocorrências.";
+        // Gráfico de Pizza (Tipos)
+        const total = Object.values(contTipos).reduce((a, b) => a + b, 0);
+        let curr = 0;
+        const slices = Object.entries(contTipos).map(([lab, val], i) => {
+            const p = (val/total)*100;
+            const s = `${cores[i % cores.length]} ${curr}% ${curr + p}%`;
+            curr += p;
+            return s;
+        });
+        document.getElementById('graficoPizzaTipos').innerHTML = `<p><b>Distribuição por Tipo:</b></p>
+            <div class="pie-chart" style="background: conic-gradient(${slices.join(',')})"></div>`;
 
     } catch (e) { alert("Erro ao carregar dashboard."); }
 }
@@ -703,6 +670,7 @@
 
 </body>
 </html>
+
 
 
 
