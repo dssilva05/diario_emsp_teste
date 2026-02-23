@@ -214,7 +214,7 @@
         <div id="graficoTurmas"></div>
 
         <div class="dashboard-title">Alunos com mais ocorrências</div>
-        <div id="tabelaTopAlunos"></div>
+        <div id="listaAlunosMaisOcorrencias" style="margin-bottom:20px;"></div>
 
         <div class="dashboard-title">Ocorrências (Geral)</div>
         <div class="pie-charts-wrapper">
@@ -669,41 +669,51 @@
 }
 
     async function gerarAlertaCritico() {
-    if (!navigator.onLine) return alert("⚠️ Conecte-se para atualizar o Dashboard.");
+    if (!navigator.onLine) return alert("⚠️ Você está offline. Conecte-se para atualizar o Dashboard.");
     
     const dashboard = document.getElementById('resDashboard');
     dashboard.classList.remove('hidden');
-    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando...";
+    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando dados...";
     
     try {
         const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
         const data = await res.json();
 
         let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
+        // Lista exata das turmas do turno da tarde
         const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
         const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
 
+        // 1. Processamento dos dados da Planilha (i=1 pula o cabeçalho)
         for (let i = 1; i < data.length; i++) {
             const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
-            const tratativa = (data[i][7] || "").split(" (")[0].trim() || "Sem ação da gestão";
+            const tratativaRaw = (data[i][7] || "").split(" (")[0].trim() || "Sem ação da gestão";
 
+            // Contagem por Turno
             if (turma) {
                 if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
                 else contManha[turma] = (contManha[turma] || 0) + 1;
             }
+
+            // Contagem por Aluno (Ignora registros coletivos para o ranking individual)
             if (aluno && aluno !== "TODA A TURMA") {
                 const chave = `${aluno} (${turma})`;
                 contAlunos[chave] = (contAlunos[chave] || 0) + 1;
             }
+
+            // Extração do Tipo [Entre Colchetes]
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
+            
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
-            contTratativas[tratativa] = (contTratativas[tratativa] || 0) + 1;
+            contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
         }
 
-        // Renderização de Colunas (Barras)
+        // --- FUNÇÕES DE RENDERIZAÇÃO INTERNAS ---
+
+        // Gráfico de Colunas Azuis
         const renderColunas = (obj, titulo) => {
             const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
             if (!entradas.length) return "";
@@ -720,7 +730,7 @@
             return h + `</div>`;
         };
 
-        // Renderização de Pizza (Círculo)
+        // Gráfico de Pizza com Legenda Zebra
         const renderPizza = (obj, titulo) => {
             const dados = Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, 6);
             const total = Object.values(obj).reduce((a, b) => a + b, 0);
@@ -729,7 +739,6 @@
             let curr = 0;
             const slices = dados.map(([lab, val], idx) => {
                 const p = (val / total) * 100;
-                // Formatação rigorosa para o conic-gradient
                 const s = `${cores[idx % cores.length]} ${curr.toFixed(2)}% ${(curr + p).toFixed(2)}%`;
                 curr += p;
                 return { label: lab, val: val, color: cores[idx % cores.length], slice: s };
@@ -744,25 +753,40 @@
             return h + `</ul>`;
         };
 
+        // Lista de Alunos (Tabela Zebra)
+        const renderListaAlunos = (obj, limite) => {
+            const ordenados = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, limite);
+            if (!ordenados.length) return "<p style='text-align:center; color:gray;'>Nenhum dado.</p>";
+
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:12px; background:white; border-radius:8px; overflow:hidden;">';
+            ordenados.forEach(([nome, total]) => {
+                html += `<tr style="border-bottom: 1px solid #eee">
+                            <td style="padding:10px; text-transform: uppercase;">${nome}</td>
+                            <td style="padding:10px; color:red; text-align:right;"><b>${total} reg.</b></td>
+                         </tr>`;
+            });
+            return html + '</table>';
+        };
+
+        // --- APLICAÇÃO DOS DADOS NOS CONTAINERS ---
+
+        // 1. Alunos Críticos (+10)
+        const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10);
+        document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(criticos), 20);
+
+        // 2. Ocorrências por Turma (Barras)
         document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
+
+        // 3. Ranking de Alunos (Lista)
+        document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);
+
+        // 4. Pizzas (Geral)
         document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
         document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
-        
-        // Tabela de Alunos Críticos
-        const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10).sort((a,b) => b[1] - a[1]);
-        let hAlert = '<table style="width:100%; border-collapse:collapse; font-size:12px; background:white; border-radius:8px; overflow:hidden;">';
-        if (criticos.length === 0) {
-            hAlert += '<tr><td style="padding:15px; text-align:center; color:gray;">Nenhum aluno crítico no momento.</td></tr>';
-        } else {
-            criticos.forEach(([aluno, total]) => {
-                hAlert += `<tr style="border-bottom: 1px solid #eee"><td style="padding:10px;"><b>${aluno}</b></td><td style="padding:10px; color:red; text-align:right;"><b>${total} registros</b></td></tr>`;
-            });
-        }
-        document.getElementById('resAlertaCritico').innerHTML = hAlert + '</table>';
 
     } catch (e) { 
-        console.error(e);
-        alert("Erro ao carregar Dashboard."); 
+        console.error("Erro Dashboard:", e);
+        alert("Erro ao processar os dados do Dashboard."); 
     }
 }
 
@@ -795,6 +819,7 @@
 
 </body>
 </html>
+
 
 
 
