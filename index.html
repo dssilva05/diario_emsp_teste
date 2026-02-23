@@ -445,15 +445,40 @@
     }
 
     async function sincronizarDados() {
-        let f = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
-        if (f.length > 0 && navigator.onLine) {
-            for (let item of f) {
-                const p = new URLSearchParams(); for (let k in item) p.append(k, item[k]);
-                try { await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p }); } catch(e){}
+    // 1. Verifica se já existe uma sincronização em andamento para evitar duplicidade
+    if (window.isSyncing) return;
+    
+    let f = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
+    
+    if (f.length > 0 && navigator.onLine) {
+        window.isSyncing = true; // Bloqueia novas tentativas simultâneas
+        console.log("Iniciando sincronização de " + f.length + " registros...");
+
+        // 2. Criamos uma cópia da fila e limpamos o localStorage IMEDIATAMENTE
+        // Assim, se o usuário clicar de novo, a fila já estará vazia.
+        const itensParaEnviar = [...f];
+        localStorage.removeItem('filaOfflineSobral');
+
+        try {
+            for (let item of itensParaEnviar) {
+                const p = new URLSearchParams(); 
+                for (let k in item) p.append(k, item[k]);
+                
+                // Usamos await para garantir que um termine antes do outro
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
             }
-            localStorage.removeItem('filaOfflineSobral'); alert("Sincronizado!");
+            alert("✅ Sincronização concluída com sucesso!");
+        } catch (e) {
+            console.error("Erro na sincronização:", e);
+            // 3. Se falhar feio, devolvemos os itens não enviados para a fila
+            const filaAtual = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
+            localStorage.setItem('filaOfflineSobral', JSON.stringify([...itensParaEnviar, ...filaAtual]));
+            alert("⚠️ Falha ao sincronizar. Os dados foram preservados no aparelho.");
+        } finally {
+            window.isSyncing = false; // Libera o bloqueio
         }
     }
+}
 
     async function consultarHistorico() {
     const t = document.getElementById('selTurmaCons').value, 
@@ -879,6 +904,7 @@
 
 </body>
 </html>
+
 
 
 
