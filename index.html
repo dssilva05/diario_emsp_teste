@@ -461,8 +461,12 @@
 }
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
+    // SALVA OS DADOS ATUAIS EM VARIÁVEIS GLOBAIS PARA NÃO PERDER NA GRAVAÇÃO
+    window.tratativaAtual = tratativa;
+    window.relatoGestaoAtual = relatoGestao;
+    
     idEditando = id; 
-    tab(1); 
+    tab(1);
     
     // Ajuste da data principal
     const p = data.split('/');
@@ -626,6 +630,7 @@
 
 </body>
 </html>
+
 
 
 
