@@ -499,23 +499,39 @@
     });
 
     // 2. Filtros de Trimestre e Dono do Registro
-    if (p !== "Todos os Trimestres") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
+    if (p !== "Todos os Trimestres") {
+        filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === p);
+    }
+    
     if (!verTodos) {
         const meuNome = profNomeLogado.split(" ")[0].toUpperCase();
         filtrados = filtrados.filter(r => String(r[2]).toUpperCase().includes(meuNome));
     }
 
-    // 3. Ordenação (Mais recente primeiro)
+    // 3. ORDENAÇÃO CRONOLÓGICA (Mais recente primeiro)
     filtrados.sort((m, n) => {
-        const c = (t) => { let x = t.split('/'); return new Date(x[2], x[1]-1, x[0]); };
-        return c(n[1]) - c(m[1]);
+        const converter = (dataStr) => {
+            const partes = dataStr.split('/');
+            return new Date(partes[2], partes[1] - 1, partes[0]).getTime();
+        };
+        return converter(n[1]) - converter(m[1]);
     });
 
-    if (filtrados.length === 0) { rDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Nada encontrado.</p>"; return; }
+    if (filtrados.length === 0) { 
+        rDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Nada encontrado.</p>"; 
+        return; 
+    }
     
     let html = `<h3>Histórico: ${a || "Toda a Turma " + t}</h3>`;
+    
+    // 4. AGRUPAMENTO POR TRIMESTRE (Mantendo a ordem cronológica dentro deles)
     let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
-    filtrados.forEach(r => { let tri = identificarTrimestre(r[1]); if(grupos[tri]) grupos[tri].push(r); else grupos["Fora de Período"].push(r); });
+    
+    filtrados.forEach(r => { 
+        let tri = identificarTrimestre(r[1]); 
+        if(grupos[tri]) grupos[tri].push(r); 
+        else grupos["Fora de Período"].push(r); 
+    });
 
     for (let tri in grupos) {
         if (grupos[tri].length > 0) {
@@ -524,24 +540,18 @@
                 const souDono = String(r[2]).toUpperCase().includes(profNomeLogado.split(" ")[0].toUpperCase());
                 const souGestor = (cargoLogado === "Diretor");
 
-                // --- LÓGICA DE EXIBIÇÃO DA TRATATIVA COM LIMPEZA ---
                 let textoTratativaBruto = r[7] || "";
                 let textoExibicao = textoTratativaBruto;
                 let avisoDataReuniao = "";
 
-                // Verifica se há data de reunião para destacar e limpar o texto
                 if (textoTratativaBruto.includes("(Data:")) {
                     const matchData = textoTratativaBruto.match(/\d{2}\/\d{2}\/\d{4}/);
                     if (matchData) {
-                        // Cria a linha de destaque visual para todos
                         avisoDataReuniao = `<p style="color:#e65100; font-weight:bold; margin-top:5px; margin-bottom:0;">📅 Reunião agendada para: ${matchData[0]}</p>`;
-                        
-                        // Limpa o texto original removendo o parêntese com a data para não repetir
                         textoExibicao = textoTratativaBruto.replace(/\s\(Data:.*?\)/g, "");
                     }
                 }
 
-                // Relato Privado: Aparece apenas se for Gestor
                 const relatoPrivadoHTML = (souGestor && r[8]) ? 
                     `<div style="background:#fff3e0; padding:10px; border:1px dashed #ff9800; margin-top:8px; font-size:12px; color:#e65100;">
                         <strong>🔒 Relato Privado (Gestão):</strong> ${r[8]}
@@ -558,13 +568,7 @@
                     <strong>${r[1]} - ${r[2]}</strong>
                     <p style="margin:10px 0;">${r[5]}</p>
                     ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>' : ''}
-                    
-                    ${textoTratativaBruto ? `
-                        <div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; font-size:13px;">
-                            <strong>Ação da Gestão:</strong> ${textoExibicao}
-                            ${avisoDataReuniao}
-                        </div>` : ''}
-                    
+                    ${textoTratativaBruto ? `<div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; font-size:13px;"><strong>Ação da Gestão:</strong> ${textoExibicao} ${avisoDataReuniao}</div>` : ''}
                     ${relatoPrivadoHTML}
                 </div>`;
             });
@@ -879,6 +883,7 @@
 
 </body>
 </html>
+
 
 
 
