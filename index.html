@@ -435,6 +435,120 @@ window.addEventListener('load', atualizarStatusRede);
     }
 }
 
+    // --- LOGICA DA ABA 3 (ALERTAS / DASHBOARD) ---
+async function gerarAlertaCritico() {
+    // 1. Verifica se há internet, pois o dashboard precisa dos dados mais recentes da planilha
+    if (!navigator.onLine) return alert("⚠️ Você está offline. Conecte-se para atualizar os dados do Dashboard.");
+    
+    const dashboard = document.getElementById('resDashboard');
+    dashboard.classList.remove('hidden'); // Mostra o container dos gráficos
+    document.getElementById('resAlertaCritico').innerHTML = "⏳ Processando dados...";
+    
+    try {
+        // Busca os dados das ocorrências e das tratativas (se houver) simultaneamente
+        const [resDados, resTrat] = await Promise.all([
+            fetch(`${SCRIPT_URL}?acao=getDados`),
+            fetch(`${SCRIPT_URL}?acao=getTratativasAlertas`)
+        ]);
+        
+        const data = await resDados.json();
+        const tratativasSalvas = await resTrat.json();
+
+        let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
+        const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
+        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4", "#795548"];
+
+        // 2. Loop para processar cada linha da planilha (começa em 1 para pular o cabeçalho)
+        for (let i = 1; i < data.length; i++) {
+            const profField = data[i][2] || ""; 
+            const turma = data[i][3];
+            const aluno = data[i][4];
+            const tratativaOficial = data[i][7] || ""; 
+
+            if (turma) {
+                if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
+                else contManha[turma] = (contManha[turma] || 0) + 1;
+            }
+
+            if (aluno) {
+                const chaveAluno = `${aluno} (${turma})`;
+                contAlunos[chaveAluno] = (contAlunos[chaveAluno] || 0) + 1;
+            }
+
+            // Extrai o tipo de registro que está entre colchetes [Ex: Ocorrência]
+            const tipoMatch = profField.match(/\[(.*?)\]/);
+            const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
+            contTipos[tipo] = (contTipos[tipo] || 0) + 1;
+
+            let tLimpa = tratativaOficial.split(" (")[0].trim();
+            if (!tLimpa || tLimpa === "") tLimpa = "Sem ação da gestão";
+            contTratativas[tLimpa] = (contTratativas[tLimpa] || 0) + 1;
+        }
+
+        // --- RENDERIZAÇÃO DOS GRÁFICOS ---
+        
+        // Função interna para criar os gráficos de pizza
+        const criarPizza = (contagem, titulo) => {
+            const dados = Object.entries(contagem).sort((a,b) => b[1] - a[1]);
+            const total = dados.reduce((acc, curr) => acc + curr[1], 0);
+            let currentPerc = 0;
+            
+            const slices = dados.map(([label, val], idx) => {
+                const perc = (val / total) * 100;
+                const slice = `${cores[idx % cores.length]} ${currentPerc}% ${currentPerc + perc}%`;
+                currentPerc += perc;
+                return { label, val, color: cores[idx % cores.length], slice };
+            });
+
+            let h = `<b style="font-size:13px; color:var(--blue); margin-bottom:10px;">${titulo}</b>`;
+            h += `<div class="pie-chart" style="background: conic-gradient(${slices.map(s => s.slice).join(', ')})"></div>`;
+            h += `<ul class="pie-legend">`;
+            slices.forEach(s => {
+                h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`;
+            });
+            return h + `</ul>`;
+        };
+
+        document.getElementById('graficoPizzaTipos').innerHTML = criarPizza(contTipos, "Tipos de Registro");
+        document.getElementById('graficoPizzaTratativas').innerHTML = criarPizza(contTratativas, "Ações da Gestão");
+
+        // Função interna para criar as colunas verticais (Turmas)
+        const gerarColunas = (contagem, titulo) => {
+            const ordenadas = Object.entries(contagem).sort((a,b) => b[1] - a[1]);
+            if (ordenadas.length === 0) return "";
+            const maxVal = ordenadas[0][1];
+            let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b>`;
+            h += `<div class="column-chart-container">`;
+            ordenadas.forEach(([turma, total]) => {
+                const alturaPerc = Math.max((total / maxVal) * 100, 8);
+                h += `<div class="column-wrapper">
+                        <div class="column-value">${total}</div>
+                        <div class="column-bar" style="height:${alturaPerc}%"></div>
+                        <div class="column-label">${turma}</div>
+                      </div>`;
+            });
+            return h + `</div>`;
+        };
+        document.getElementById('graficoTurmas').innerHTML = gerarColunas(contManha, "Manhã") + gerarColunas(contTarde, "Tarde");
+
+        // Tabela de Alunos Críticos (Mais de 10 ocorrências)
+        const alertas = Object.entries(contAlunos).filter(it => it[1] >= 10).sort((a,b) => b[1] - a[1]);
+        let hAlert = '<table style="width:100%; border-collapse:collapse; font-size:12px; background:white;">';
+        if (alertas.length === 0) {
+            hAlert += '<tr><td style="padding:15px; text-align:center; color:gray;">Nenhum aluno crítico no momento.</td></tr>';
+        } else {
+            alertas.forEach(([aluno, total]) => {
+                hAlert += `<tr style="border-bottom: 2px solid #f0f0f0"><td style="padding:10px;"><b>${aluno}</b></td><td style="padding:10px; color:red; text-align:right;"><b>${total} registros</b></td></tr>`;
+            });
+        }
+        document.getElementById('resAlertaCritico').innerHTML = hAlert + '</table>';
+
+    } catch (e) {
+        console.error("Erro no Dashboard:", e);
+        alert("Erro ao carregar os dados. Verifique sua conexão.");
+    }
+}
+
     function exibirDados(data, t, a, p) {
     const rDiv = document.getElementById('resConsulta');
     const verTodos = document.getElementById('chkTodosRegistros').checked;
@@ -588,12 +702,17 @@ window.addEventListener('load', atualizarStatusRede);
 }
 
     function identificarTrimestre(ds) { 
-        const p = ds.split('/'); const d = new Date(p[2], p[1]-1, p[0]);
-        if (d >= new Date(2026, 1, 4) && d <= new Date(2026, 4, 15)) return "1º Trimestre";
-        if (d >= new Date(2026, 4, 18) && d <= new Date(2026, 7, 31)) return "2º Trimestre";
-        if (d >= new Date(2026, 8, 1) && d <= new Date(2026, 11, 15)) return "3º Trimestre";
-        return "Fora de Período";
-    }
+    if (!ds || typeof ds !== 'string') return "Fora de Período";
+    const p = ds.split('/'); 
+    if (p.length !== 3) return "Fora de Período";
+    const d = new Date(p[2], p[1]-1, p[0]);
+
+    // Datas letivas de 2026
+    if (d >= new Date(2026, 1, 4) && d <= new Date(2026, 4, 15)) return "1º Trimestre";
+    if (d >= new Date(2026, 4, 18) && d <= new Date(2026, 7, 31)) return "2º Trimestre";
+    if (d >= new Date(2026, 8, 1) && d <= new Date(2026, 11, 15)) return "3º Trimestre";
+    return "Fora de Período";
+}
 </script>
 
 <button class="btn-ajuda-fixo" onclick="toggleAjuda()">💡 Dúvidas?</button>
@@ -605,6 +724,7 @@ window.addEventListener('load', atualizarStatusRede);
 
 </body>
 </html>
+
 
 
 
