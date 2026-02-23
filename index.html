@@ -279,59 +279,67 @@
     }
 
     async function gravarOcorrencia() {
-        const tVal = document.getElementById('selTurma').value, aVal = document.getElementById('selAluno').value;
-        const rVal = document.getElementById('relatoTexto').value, dVal = document.getElementById('dataOcorrenciaManual').value;
-        if (!dVal || !tVal || !aVal || !rVal.trim()) return alert("⚠️ Preencha tudo!");
+    const tVal = document.getElementById('selTurma').value;
+    const aVal = document.getElementById('selAluno').value;
+    const rVal = document.getElementById('relatoTexto').value;
+    const dVal = document.getElementById('dataOcorrenciaManual').value;
 
-        const dados = {
-            acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
-            id: idEditando || Date.now(),
-            professor: `[${document.getElementById('selTipoRegistro').value}] Prof: ${profNomeLogado.split(" ")[0]}`,
-            dataManual: dVal.split("-").reverse().join("/"),
-            turma: tVal, aluno: aVal, texto: rVal,
-            advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
-            tratativa: document.getElementById('selTratativa')?.value || "",
-            relatoGestao: document.getElementById('relatoGestaoTexto')?.value || ""
-        };
+    if (!dVal || !tVal || !aVal || !rVal.trim()) {
+        return alert("⚠️ Preencha Data, Turma, Aluno e Relato!");
+    }
 
-        if (navigator.onLine) {
-            try {
-                const p = new URLSearchParams(); for (let k in dados) p.append(k, dados[k]);
-                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
-                alert("Gravado!"); limparForm();
-            } catch (e) { salvarFila(dados); }
-        } else { salvarFila(dados); }
+    // --- NOVA LÓGICA PARA CAPTURAR TRATATIVA E DATA ---
+    let tratativaFinal = "";
+    let relatoGestaoFinal = "";
 
-        let tratativaFinal = "";
-let relatoPrivadoFinal = "";
+    if (cargoLogado === "Diretor") {
+        const selT = document.getElementById('selTratativa');
+        const dtC = document.getElementById('dataConvocacao');
+        const rG = document.getElementById('relatoGestaoTexto');
 
-if (cargoLogado === "Diretor") {
-    const selTrat = document.getElementById('selTratativa');
-    const dataConv = document.getElementById('dataConvocacao');
-    const relatoPriv = document.getElementById('relatoGestaoTexto');
-
-    if (selTrat) {
-        tratativaFinal = selTrat.value;
-        // Se for Família Convocada e tiver data, monta a string com a data formatada
-        if (tratativaFinal === "Família Convocada" && dataConv && dataConv.value) {
-            const d = dataConv.value.split('-'); // AAAA-MM-DD
-            tratativaFinal += ` (Data: ${d[2]}/${[1]}/${d[0]})`;
+        if (selT && selT.value) {
+            tratativaFinal = selT.value;
+            // Se for Família Convocada, anexa a data ao texto da tratativa
+            if (tratativaFinal === "Família Convocada" && dtC && dtC.value) {
+                const dataFormatada = dtC.value.split('-').reverse().join('/');
+                tratativaFinal += ` (Data: ${dataFormatada})`;
+            }
         }
+        if (rG) relatoGestaoFinal = rG.value;
     }
-    
-    if (relatoPriv) {
-        relatoPrivadoFinal = relatoPriv.value;
-    }
-}
+    // --------------------------------------------------
 
-// Na hora de montar os parâmetros (URLSearchParams) para enviar ao GAS:
-const p = new URLSearchParams();
-p.append('acao', 'gravarOcorrencia');
-p.append('id', idEditando);
-// ... outros campos (data, turma, aluno, relato) ...
-p.append('tratativa', tratativaFinal);
-p.append('relatoGestao', relatoPrivadoFinal);
+    const dados = {
+        acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
+        id: idEditando || Date.now(),
+        professor: `[${document.getElementById('selTipoRegistro').value}] Prof: ${profNomeLogado.split(" ")[0]}`,
+        dataManual: dVal.split("-").reverse().join("/"),
+        turma: tVal,
+        aluno: aVal,
+        texto: rVal,
+        advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
+        tratativa: tratativaFinal, // Agora envia com a data inclusa
+        relatoGestao: relatoGestaoFinal
+    };
+
+    const btn = document.getElementById('btnGravar');
+    btn.innerText = "⏳ Gravando...";
+    btn.disabled = true;
+
+    if (navigator.onLine) {
+        try {
+            const p = new URLSearchParams();
+            for (let key in dados) p.append(key, dados[key]);
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+            alert("Sucesso!");
+            limparForm();
+        } catch (e) { salvarFila(dados); }
+    } else {
+        salvarFila(dados);
     }
+    btn.innerText = "Gravar no Diário";
+    btn.disabled = false;
+}
 
     function salvarFila(d) {
         let f = JSON.parse(localStorage.getItem('filaOfflineSobral') || "[]");
@@ -603,6 +611,7 @@ p.append('relatoGestao', relatoPrivadoFinal);
 
 </body>
 </html>
+
 
 
 
