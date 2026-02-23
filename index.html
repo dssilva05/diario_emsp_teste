@@ -683,10 +683,13 @@ async function gerarAlertaCritico() {
         cont.innerHTML = `
             <div style="background:#f0f7ff; padding:15px; border-radius:8px; margin:15px 0; border:1px solid #1976d2;">
                 <label>🛠️ Ação da Gestão:</label>
-                <select id="selTratativa" onchange="verificarDataConvocacao()">
+                <select id="selTratativa" onchange="verificarDataConvocacao()" style="width:100%; border:2px solid #1976d2;">
                     <option value="">Selecione...</option>
-                    <option value="Conversa com o Aluno" ${tratativa.includes("Conversa") ? "selected" : ""}>Conversa com o Aluno</option>
-                    <option value="Família Convocada" ${tratativa.includes("Família") ? "selected" : ""}>Família Convocada</option>
+                    <option value="Conversa com o Aluno" ${opcaoSalva === "Conversa com o Aluno" ? "selected" : ""}>Conversa com o Aluno</option>
+                    <option value="Advertência Verbal" ${opcaoSalva === "Advertência Verbal" ? "selected" : ""}>Advertência Verbal</option>
+                    <option value="Advertência por Escrito" ${opcaoSalva === "Advertência por Escrito" ? "selected" : ""}>Advertência por Escrito</option>
+                    <option value="Família Convocada" ${opcaoSalva === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
+                    <option value="Encaminhamento PAS" ${opcaoSalva === "Encaminhamento PAS" ? "selected" : ""}>Encaminhamento PAS</option>
                 </select>
                 <label>🔒 Relato Interno (PRIVADO):</label>
                 <textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
@@ -787,6 +790,7 @@ async function gerarAlertaCritico() {
 
 </body>
 </html>
+
 
 
 
