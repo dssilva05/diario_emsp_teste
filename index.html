@@ -373,6 +373,7 @@
     idEditando = id; 
     tab(1); // Vai para a aba de formulário
     
+    // Converte data para o campo input date
     const p = data.split('/');
     if(p.length === 3) document.getElementById('dataOcorrenciaManual').value = `${p[2]}-${p[1]}-${p[0]}`;
     
@@ -388,22 +389,25 @@
     const cont = document.getElementById('containerTratativa');
     
     if (cargoLogado === "Diretor" && focarTratativa === true) {
-        // Lógica para recuperar a opção correta e a data se houver
+        // 1. Extrair a opção de tratativa e a data da string salva
+        // Exemplo de tratativa: "Família Convocada (Data: 25/02/2026)"
         let opcaoLimpa = tratativa.split(" (Data:")[0].trim();
-        let dataSalva = "";
+        let dataInputFormat = "";
         
-        // Se houver uma data no texto (Ex: Família Convocada (Data: 20/02/2026))
         if (tratativa.includes("(Data:")) {
-            const matchData = tratativa.match(/\d{2}\/\d{2}\/\d{4}/);
-            if (matchData) {
-                dataSalva = matchData[0].split('/').reverse().join('-');
+            const match = tratativa.match(/\d{2}\/\d{2}\/\d{4}/);
+            if (match) {
+                // Converte DD/MM/AAAA para AAAA-MM-DD para o input date
+                dataInputFormat = match[0].split('/').reverse().join('-');
             }
         }
 
+        // 2. Montar o HTML garantindo que os valores apareçam
         cont.innerHTML = `
             <div style="background:#f0f7ff; padding:15px; border-radius:8px; margin-top:15px; border:1px solid #1976d2;">
-                <label style="color:#1976d2;">🛠️ Espaço da Gestão (Tratativa)</label>
-                <select id="selTratativa" onchange="verificarDataConvocacao()">
+                <label style="color:#1976d2; font-weight:bold;">🛠️ Espaço da Gestão (Tratativa)</label>
+                
+                <select id="selTratativa" onchange="verificarDataConvocacao()" style="margin-top:10px;">
                     <option value="">Selecione a ação...</option>
                     <option value="Conversa com o Aluno" ${opcaoLimpa === "Conversa com o Aluno" ? "selected" : ""}>Conversa com o Aluno</option>
                     <option value="Advertência Verbal" ${opcaoLimpa === "Advertência Verbal" ? "selected" : ""}>Advertência Verbal</option>
@@ -411,23 +415,26 @@
                     <option value="Família Convocada" ${opcaoLimpa === "Família Convocada" ? "selected" : ""}>Família Convocada</option>
                     <option value="Encaminhamento PAS" ${opcaoLimpa === "Encaminhamento PAS" ? "selected" : ""}>Encaminhamento PAS</option>
                 </select>
+
                 <div id="divDataConvocacao" style="display:${opcaoLimpa === "Família Convocada" ? "block" : "none"}; margin-top:10px;">
                     <label>📅 Data da Reunião:</label>
-                    <input type="date" id="dataConvocacao" value="${dataSalva}">
+                    <input type="date" id="dataConvocacao" value="${dataInputFormat}">
                 </div>
-                <label>🔒 Relato Interno (Privado):</label>
-                <textarea id="relatoGestaoTexto" rows="3">${relatoGestao || ""}</textarea>
+
+                <label style="display:block; margin-top:15px;">🔒 Relato Interno (Privado):</label>
+                <textarea id="relatoGestaoTexto" rows="3" placeholder="Anotações exclusivas da gestão...">${relatoGestao || ""}</textarea>
             </div>`;
+        
         cont.classList.remove('hidden');
         
         setTimeout(() => {
             document.getElementById('selTratativa').focus();
-            // Não precisa chamar verificarDataConvocacao() aqui, pois o style:display já resolve
         }, 300);
     } else {
         cont.innerHTML = "";
         cont.classList.add('hidden');
     }
+    
     document.getElementById('btnGravar').innerText = "💾 Salvar Alteração";
 }
 
@@ -520,6 +527,7 @@
 
 </body>
 </html>
+
 
 
 
