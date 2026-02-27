@@ -814,7 +814,8 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
     // 1. Filtragem por Turma e Aluno
     let filtrados = data.filter(r => {
         const turmaBate = r[3] && String(r[3]).trim() === t;
-        const alunoBate = a ? (String(r[4]).trim() === a) : (String(r[4]).trim() === "TODA A TURMA");
+        // Se 'a' (aluno) existir, filtra por ele. Se não, traz todos da turma, exceto registros "TODA A TURMA"
+        const alunoBate = a ? (String(r[4]).trim() === a) : true;
         return turmaBate && alunoBate;
     });
 
@@ -828,14 +829,12 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
         filtrados = filtrados.filter(r => String(r[2]).toUpperCase().includes(meuNome));
     }
 
-    // 3. ORDENAÇÃO CRONOLÓGICA (Mais recente primeiro)
+    // 3. Ordenação Cronológica (Mais antiga para mais nova dentro dos grupos)
     filtrados.sort((m, n) => {
         const converter = (dataStr) => {
             const partes = dataStr.split('/');
-            // Cria o objeto Date (ano, mês-1, dia) para comparação numérica
             return new Date(partes[2], partes[1] - 1, partes[0]).getTime();
         };
-        // m - n garante a ordem ASCENDENTE (mais antiga -> mais nova)
         return converter(m[1]) - converter(n[1]);
     });
 
@@ -844,9 +843,9 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
         return; 
     }
     
-    let html = `<h3>Histórico: ${a || "Toda a Turma " + t}</h3>`;
+    let html = `<h3>Relatório: Turma ${t} ${a ? ' - Aluno: ' + a : '(Todos os alunos)'}</h3>`;
     
-    // 4. AGRUPAMENTO POR TRIMESTRE (Mantendo a ordem cronológica dentro deles)
+    // 4. Agrupamento por Trimestre
     let grupos = { "1º Trimestre": [], "2º Trimestre": [], "3º Trimestre": [], "Fora de Período": [] };
     
     filtrados.forEach(r => { 
@@ -879,6 +878,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
                         <strong>🔒 Relato Privado (Gestão):</strong> ${r[8]}
                     </div>` : "";
 
+                // MONTAGEM DO CARD COM NOME DO ALUNO EM DESTAQUE
                 html += `<div class="item-ocorrencia">
                     <div style="float:right; display:flex; gap:5px;">
                         ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Editar</button>` : ''}
@@ -887,9 +887,15 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
                             <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;">X</button>
                         ` : ''}
                     </div>
-                    <strong>${r[1]} - ${r[2]}</strong>
-                    <p style="margin:10px 0;">${r[5]}</p>
-                    ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold;">⚠️ Advertência por Escrito Enviada</p>' : ''}
+                    
+                    <div style="color:var(--blue); font-weight:bold; font-size:14px; margin-bottom:5px; border-bottom:1px solid #eee; padding-bottom:3px;">
+                        👤 ALUNO: ${String(r[4]).toUpperCase()}
+                    </div>
+
+                    <small>📅 ${r[1]} — ✍️ ${r[2]}</small>
+                    <p style="margin:10px 0; font-size:14px; line-height:1.5;">${r[5]}</p>
+                    
+                    ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold; font-size:12px;">⚠️ Advertência por Escrito Enviada</p>' : ''}
                     ${textoTratativaBruto ? `<div style="background:#e8f5e9; padding:10px; border-left:4px solid #4caf50; font-size:13px;"><strong>Ação da Gestão:</strong> ${textoExibicao} ${avisoDataReuniao}</div>` : ''}
                     ${relatoPrivadoHTML}
                 </div>`;
@@ -1334,6 +1340,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
 
 </body>
 </html>
+
 
 
 
