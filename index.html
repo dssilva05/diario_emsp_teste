@@ -87,8 +87,23 @@
     transition: height 0.5s ease; 
     min-height: 2px; /* Garante visibilidade mesmo com 1 registro */
     display: block;
+    cursor: pointer;
+    transition: background-color 0.3s, height 0.5s ease;
 }
 
+.column-bar:hover {
+    background-color: var(--gold) !important;
+}
+
+.lista-detalhe-turma {
+    background: white;
+    margin-top: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+        
 .column-wrapper {
     display: flex;
     flex-direction: column;
@@ -299,6 +314,7 @@
 
         <div class="dashboard-title">Ocorrências por Turma</div>
         <div id="graficoTurmas"></div>
+        <div id="detalheAlunosTurma" class="hidden lista-detalhe-turma"></div>
 
         <div class="dashboard-title">Alunos com mais ocorrências</div>
         <div id="listaAlunosMaisOcorrencias" style="margin-bottom:20px;"></div>
@@ -932,6 +948,7 @@
         const data = await res.json();
 
         let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
+        let detalheTurmas = {};
         // Lista exata das turmas do turno da tarde
         const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
         const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
@@ -955,6 +972,11 @@
                 contAlunos[chave] = (contAlunos[chave] || 0) + 1;
             }
 
+            if (turma && aluno && aluno !== "TODA A TURMA") {
+                if (!detalheTurmas[turma]) detalheTurmas[turma] = {};
+                detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;
+            }
+
             // Extração do Tipo [Entre Colchetes]
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
@@ -967,20 +989,22 @@
 
         // Gráfico de Colunas Azuis
         const renderColunas = (obj, titulo) => {
-            const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
-            if (!entradas.length) return "";
-            const max = Math.max(...Object.values(obj));
-            let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
-            entradas.forEach(([t, v]) => {
-                const altura = (v / max) * 100;
-                h += `<div class="column-wrapper">
-                        <div class="column-value">${v}</div>
-                        <div class="column-bar" style="height:${altura}%"></div>
-                        <div class="column-label">${t}</div>
-                      </div>`;
-            });
-            return h + `</div>`;
-        };
+    const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
+    if (!entradas.length) return "";
+    const max = Math.max(...Object.values(obj));
+    let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
+    
+    entradas.forEach(([t, v]) => {
+        const altura = (v / max) * 100;
+        // Adicionamos o onclick passando o nome da turma e os dados coletados
+        h += `<div class="column-wrapper">
+                <div class="column-value">${v}</div>
+                <div class="column-bar" style="height:${altura}%" onclick="mostrarDetalhesTurma('${t}')"></div>
+                <div class="column-label">${t}</div>
+              </div>`;
+    });
+    return h + `</div>`;
+};
 
         // Gráfico de Pizza com Legenda Zebra
         const renderPizza = (obj, titulo) => {
@@ -1036,6 +1060,8 @@
         document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
         document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
 
+        window.detalheGlobal = detalheTurmas;
+        
     } catch (e) { 
         console.error("Erro Dashboard:", e);
         alert("Erro ao processar os dados do Dashboard."); 
@@ -1187,10 +1213,42 @@
         alert("Erro ao processar transferência."); 
     }
 }
+
+    function mostrarDetalhesTurma(turma) {
+    const container = document.getElementById('detalheAlunosTurma');
+    // window.dadosDetalhados deve ser alimentado na gerarAlertaCritico
+    const alunos = window.detalheGlobal[turma]; 
+
+    if (!alunos) {
+        alert("Nenhum detalhe individual para esta turma.");
+        return;
+    }
+
+    const listaOrdenada = Object.entries(alunos).sort((a, b) => b[1] - a[1]);
+    
+    let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h4 style="margin:0; color:var(--blue);">Alunos com Ocorrência: Turma ${turma}</h4>
+                    <button onclick="document.getElementById('detalheAlunosTurma').classList.add('hidden')" style="border:none; background:none; cursor:pointer; font-weight:bold; color:red;">[ Fechar ]</button>
+                </div>`;
+    
+    html += '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
+    listaOrdenada.forEach(([nome, total]) => {
+        html += `<tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px; text-transform:uppercase;">${nome}</td>
+                    <td style="padding:8px; text-align:right;"><b>${total}</b></td>
+                 </tr>`;
+    });
+    html += '</table>';
+
+    container.innerHTML = html;
+    container.classList.remove('hidden');
+    container.scrollIntoView({ behavior: 'smooth' });
+}
 </script>
 
 </body>
 </html>
+
 
 
 
