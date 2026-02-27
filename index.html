@@ -321,15 +321,23 @@
             </div>
 
             <div class="card" style="border-left: 5px solid orange;">
-                <h3 style="color:orange; margin-top:0;">🔄 Transferir Aluno</h3>
-                <label>Selecione o Aluno:</label>
-                <select id="selectAlunoTransferir">
-                    <option value="">Carregando alunos...</option>
-                </select>
-                <label>Nova Turma Destino:</label>
-                <select id="novaTurmaDestino"></select>
-                <button class="btn-main" style="background:orange" onclick="transferirAluno()">Confirmar Transferência</button>
-            </div>
+    <h3 style="color:orange; margin-top:0;">🔄 Transferir Aluno</h3>
+    
+    <label>1. Origem (Turma Atual):</label>
+    <select id="selTurmaTransf" onchange="atualizarAlunos('selTurmaTransf', 'selectAlunoTransferir')">
+        <option value="">Selecione a turma...</option>
+    </select>
+
+    <label>2. Aluno para mover:</label>
+    <select id="selectAlunoTransferir">
+        <option value="">Selecione a turma primeiro...</option>
+    </select>
+
+    <label>3. Destino (Nova Turma):</label>
+    <select id="novaTurmaDestino"></select>
+    
+    <button class="btn-main" style="background:orange; margin-top:15px;" onclick="transferirAluno()">Confirmar Mudança de Sala</button>
+</div>
         </div>
     </div>
 </div>
@@ -501,16 +509,17 @@
 }
 
     function popularTurmas() {
-        const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino'];
-        const turmas = Object.keys(ALUNOS).sort();
-        ids.forEach(id => {
-            const sel = document.getElementById(id);
-            if(sel) {
-                sel.innerHTML = '<option value="">Turma...</option>';
-                turmas.forEach(t => sel.add(new Option(t, t)));
-            }
-        });
-    }
+    // Adicionado 'selTurmaTransf' na lista
+    const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino', 'selTurmaTransf'];
+    const turmas = Object.keys(ALUNOS).sort();
+    ids.forEach(id => {
+        const sel = document.getElementById(id);
+        if(sel) {
+            sel.innerHTML = '<option value="">Turma...</option>';
+            turmas.forEach(t => sel.add(new Option(t, t)));
+        }
+    });
+}
 
     function abrirAba(num) {
     // Se tentar abrir a aba 4 e não for gestor, bloqueia
@@ -1158,21 +1167,31 @@
     }
 
     async function transferirAluno() {
-        const dados = document.getElementById('selectAlunoTransferir').value.split('|');
-        const novaTurma = document.getElementById('novaTurmaDestino').value;
-        if(!dados[0]) return alert("Selecione um aluno!");
+    const aluno = document.getElementById('selectAlunoTransferir').value;
+    const turmaAntiga = document.getElementById('selTurmaTransf').value;
+    const novaTurma = document.getElementById('novaTurmaDestino').value;
 
-        const url = `${SCRIPT_URL}?acao=transferir&aluno=${encodeURIComponent(dados[0])}&turmaAntiga=${dados[1]}&novaTurma=${novaTurma}`;
-        try {
-            await fetch(url);
-            alert("Transferência realizada!");
-            carregarDadosIniciais();
-        } catch(e) { alert("Erro ao processar."); }
+    if(!aluno || aluno === "TODA A TURMA") return alert("Selecione um aluno específico!");
+    if(turmaAntiga === novaTurma) return alert("A turma de destino deve ser diferente da atual!");
+
+    const confirmar = confirm(`Deseja mover o aluno ${aluno} da turma ${turmaAntiga} para a ${novaTurma}?`);
+    if(!confirmar) return;
+
+    const url = `${SCRIPT_URL}?acao=transferir&aluno=${encodeURIComponent(aluno)}&turmaAntiga=${turmaAntiga}&novaTurma=${novaTurma}`;
+    
+    try {
+        const res = await fetch(url);
+        alert("Transferência realizada com sucesso!");
+        carregarDadosIniciais(); // Recarrega a lista de alunos global
+    } catch(e) { 
+        alert("Erro ao processar transferência."); 
     }
+}
 </script>
 
 </body>
 </html>
+
 
 
 
