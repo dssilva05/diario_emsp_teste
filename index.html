@@ -408,6 +408,13 @@
     window.onload = function() {
     window.NOME_ESCOLA = "E. M. Sobral Pinto"; // [cite: 2]
     
+    // 1. VERIFICAÇÃO DE LOGIN AUTOMÁTICO
+    const acessoSalvo = localStorage.getItem('diarioAcessoSobral');
+    if (acessoSalvo) {
+        const dados = JSON.parse(acessoSalvo);
+        aplicarLogin(dados); // Se achou os dados, já entra no sistema
+    }
+
     // Tenta carregar do cache imediatamente para não ficar vazio
     const cacheAlunos = localStorage.getItem('cache_alunos_sobral');
     if (cacheAlunos) { 
@@ -1321,6 +1328,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
 
 </body>
 </html>
+
 
 
 
