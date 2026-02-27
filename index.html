@@ -477,23 +477,28 @@
     }
 
     function aplicarLogin(d) {
-        profNomeLogado = d.nome;
-        disciplinaLogada = d.disciplina;
-        const cp = String(d.cargo).trim().toUpperCase();
-        const gestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA", "PAS"];
-        cargoLogado = gestores.some(c => cp.includes(c)) ? "Diretor" : "Professor";
-        
-        document.getElementById('secaoAcesso').classList.add('hidden');
-        document.getElementById('conteudoDiario').classList.remove('hidden');
-        document.getElementById('nomeProfLogado').value = profNomeLogado;
+    profNomeLogado = d.nome;
+    disciplinaLogada = d.disciplina;
+    const cp = String(d.cargo).trim().toUpperCase();
+    
+    // Lista de cargos de gestão
+    const gestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA", "PAS"];
+    cargoLogado = gestores.some(c => cp.includes(c)) ? "Diretor" : "Professor";
+    
+    document.getElementById('secaoAcesso').classList.add('hidden');
+    document.getElementById('conteudoDiario').classList.remove('hidden');
+    document.getElementById('nomeProfLogado').value = profNomeLogado;
 
-        // LIBERA ABA DE ALUNOS APENAS PARA GESTÃO
-        if(cargoLogado === "Diretor") {
-            document.getElementById('t4').classList.remove('hidden');
-        }
-
-        definirDataHoje(); popularTurmas(); ajustarCamposRegistro();
+    // APARECER O BOTÃO PARA GESTÃO
+    const btnAlunos = document.getElementById('t4');
+    if (cargoLogado === "Diretor") {
+        btnAlunos.classList.remove('hidden');
+    } else {
+        btnAlunos.classList.add('hidden');
     }
+
+    definirDataHoje(); popularTurmas(); ajustarCamposRegistro();
+}
 
     function popularTurmas() {
         const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino'];
@@ -1040,17 +1045,34 @@
     }
 
     function tab(n) {
-    [1, 2, 3, 4].forEach(i => {
-            const aba = document.getElementById('aba' + i);
-            const btn = document.getElementById('t' + i);
-            if(aba) aba.classList.toggle('hidden', n !== i);
-            if(btn) btn.classList.toggle('active', n === i);
-        });
-
-        if (n === 1 && !idEditando) limparForm();
-        // Se abrir a aba de alunos, carrega a lista de transferência
-        if (n === 4) carregarListaTransferencia();
+    // 1. Bloqueio de Segurança: Se for a aba 4 e não for Diretor, cancela.
+    if (n === 4 && cargoLogado !== "Diretor") {
+        alert("Acesso restrito à equipe de gestão.");
+        return;
     }
+
+    // 2. Lógica de alternância (Loop em todas as 4 abas)
+    [1, 2, 3, 4].forEach(i => {
+        const aba = document.getElementById('aba' + i);
+        const btn = document.getElementById('t' + i);
+        
+        if (aba) {
+            if (n === i) {
+                aba.classList.remove('hidden');
+            } else {
+                aba.classList.add('hidden');
+            }
+        }
+        
+        if (btn) {
+            btn.classList.toggle('active', n === i);
+        }
+    });
+
+    // 3. Funções específicas ao abrir a aba
+    if (n === 4) carregarListaTransferencia();
+    if (n === 1 && !idEditando) limparForm();
+}
     
     function definirDataHoje() { document.getElementById('dataOcorrenciaManual').value = new Date().toISOString().split('T')[0]; }
     function limparForm() {
@@ -1151,6 +1173,7 @@
 
 </body>
 </html>
+
 
 
 
