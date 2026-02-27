@@ -233,7 +233,8 @@
     <div class="tabs">
         <button id="t1" class="tab-btn active" onclick="tab(1)">📝 INCLUIR</button>
         <button id="t2" class="tab-btn" onclick="tab(2)">🔍 CONSULTAR</button>
-        <button id="t3" class="tab-btn" onclick="tab(3)">📊 ALERTAS</button>
+        <button id="t3" class="tab-btn" onclick="tab(3)">📊 ALERTAS</button
+        <button id="t4" class="tab-btn hidden" onclick="tab(4)">👥 ALUNOS</button>                                                          
         <button onclick="logout()" style="background:none; color:white; flex:0.3; cursor:pointer">Sair</button>
     </div>
     <div class="card">
@@ -309,6 +310,27 @@
         </div>
     </div>
 </div>
+
+        <div id="aba4" class="hidden">
+            <div class="card" style="border-left: 5px solid var(--blue); margin-bottom: 20px;">
+                <h3 style="color:var(--blue); margin-top:0;">➕ Cadastrar Novo Aluno</h3>
+                <input type="text" id="novoAlunoNome" placeholder="Nome Completo do Aluno">
+                <label>Selecione a Turma:</label>
+                <select id="novoAlunoTurma"></select>
+                <button class="btn-main" onclick="salvarNovoAluno()">Cadastrar Aluno</button>
+            </div>
+
+            <div class="card" style="border-left: 5px solid orange;">
+                <h3 style="color:orange; margin-top:0;">🔄 Transferir Aluno</h3>
+                <label>Selecione o Aluno:</label>
+                <select id="selectAlunoTransferir">
+                    <option value="">Carregando alunos...</option>
+                </select>
+                <label>Nova Turma Destino:</label>
+                <select id="novaTurmaDestino"></select>
+                <button class="btn-main" style="background:orange" onclick="transferirAluno()">Confirmar Transferência</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -460,20 +482,42 @@
         const cp = String(d.cargo).trim().toUpperCase();
         const gestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA", "PAS"];
         cargoLogado = gestores.some(c => cp.includes(c)) ? "Diretor" : "Professor";
+        
         document.getElementById('secaoAcesso').classList.add('hidden');
         document.getElementById('conteudoDiario').classList.remove('hidden');
         document.getElementById('nomeProfLogado').value = profNomeLogado;
+
+        // LIBERA ABA DE ALUNOS APENAS PARA GESTÃO
+        if(cargoLogado === "Diretor") {
+            document.getElementById('t4').classList.remove('hidden');
+        }
+
         definirDataHoje(); popularTurmas(); ajustarCamposRegistro();
     }
 
     function popularTurmas() {
-        const selects = [document.getElementById('selTurma'), document.getElementById('selTurmaCons')];
+        const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino'];
         const turmas = Object.keys(ALUNOS).sort();
-        selects.forEach(sel => {
-            sel.innerHTML = '<option value="">Turma...</option>';
-            turmas.forEach(t => sel.add(new Option(t, t)));
+        ids.forEach(id => {
+            const sel = document.getElementById(id);
+            if(sel) {
+                sel.innerHTML = '<option value="">Turma...</option>';
+                turmas.forEach(t => sel.add(new Option(t, t)));
+            }
         });
     }
+
+    function abrirAba(num) {
+    // Se tentar abrir a aba 4 e não for gestor, bloqueia
+    if (num === 4 && cargoLogado !== "Diretor") {
+        alert("Acesso restrito à equipe de gestão.");
+        return;
+    }
+
+    // Lógica normal de trocar abas...
+    document.querySelectorAll('.tab-content').forEach(div => div.classList.add('hidden'));
+    document.getElementById('aba' + num).classList.remove('hidden');
+}
 
     function atualizarAlunos(idT, idA) {
         const t = document.getElementById(idT).value, s = document.getElementById(idA);
@@ -996,16 +1040,18 @@
     }
 
     function tab(n) {
-    [1, 2, 3].forEach(i => {
-        document.getElementById('aba' + i).classList.toggle('hidden', n !== i);
-        document.getElementById('t' + i).classList.toggle('active', n === i);
-    });
+    [1, 2, 3, 4].forEach(i => {
+            const aba = document.getElementById('aba' + i);
+            const btn = document.getElementById('t' + i);
+            if(aba) aba.classList.toggle('hidden', n !== i);
+            if(btn) btn.classList.toggle('active', n === i);
+        });
 
-    // Se o usuário clicar na Aba 1 (Incluir) e NÃO estiver editando nada, limpa o rastro
-    if (n === 1 && !idEditando) {
-        limparForm();
+        if (n === 1 && !idEditando) limparForm();
+        // Se abrir a aba de alunos, carrega a lista de transferência
+        if (n === 4) carregarListaTransferencia();
     }
-}
+    
     function definirDataHoje() { document.getElementById('dataOcorrenciaManual').value = new Date().toISOString().split('T')[0]; }
     function limparForm() {
     // 1. Limpa os campos visíveis
@@ -1064,10 +1110,48 @@
         }
     }
 }
+
+    function carregarListaTransferencia() {
+        const selTransferir = document.getElementById('selectAlunoTransferir');
+        selTransferir.innerHTML = '<option value="">Selecione o aluno...</option>';
+        Object.keys(ALUNOS).sort().forEach(turma => {
+            ALUNOS[turma].forEach(aluno => {
+                selTransferir.add(new Option(`${aluno} (${turma})`, `${aluno}|${turma}`));
+            });
+        });
+    }
+
+    async function salvarNovoAluno() {
+        const nome = document.getElementById('novoAlunoNome').value.trim();
+        const turma = document.getElementById('novoAlunoTurma').value;
+        if(!nome) return alert("Digite o nome!");
+        
+        const url = `${SCRIPT_URL}?acao=addAluno&nome=${encodeURIComponent(nome)}&turma=${turma}`;
+        try {
+            await fetch(url);
+            alert("Aluno adicionado! Atualizando lista...");
+            carregarDadosIniciais();
+            document.getElementById('novoAlunoNome').value = "";
+        } catch(e) { alert("Erro ao salvar."); }
+    }
+
+    async function transferirAluno() {
+        const dados = document.getElementById('selectAlunoTransferir').value.split('|');
+        const novaTurma = document.getElementById('novaTurmaDestino').value;
+        if(!dados[0]) return alert("Selecione um aluno!");
+
+        const url = `${SCRIPT_URL}?acao=transferir&aluno=${encodeURIComponent(dados[0])}&turmaAntiga=${dados[1]}&novaTurma=${novaTurma}`;
+        try {
+            await fetch(url);
+            alert("Transferência realizada!");
+            carregarDadosIniciais();
+        } catch(e) { alert("Erro ao processar."); }
+    }
 </script>
 
 </body>
 </html>
+
 
 
 
