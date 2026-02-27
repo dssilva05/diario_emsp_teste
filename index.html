@@ -864,7 +864,6 @@ async function gravarOcorrencia() {
 
     // --- ORDENAÇÃO POR QUANTIDADE (DECRESCENTE) ---
     const nomesOrdenados = Object.keys(agrupadoPorAluno).sort((a, b) => {
-        // Compara a quantidade de ocorrências de cada aluno
         return agrupadoPorAluno[b].length - agrupadoPorAluno[a].length;
     });
 
@@ -882,7 +881,6 @@ async function gravarOcorrencia() {
         <div style="background: rgba(255,255,255,0.5); padding: 10px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; margin-bottom: 10px;">
         `;
 
-        // Ordenar as ocorrências do aluno por data
         const ocorrenciasAluno = agrupadoPorAluno[nome].sort((m, n) => {
             const converter = (s) => {
                 const p = s.split('/');
@@ -913,11 +911,15 @@ async function gravarOcorrencia() {
                     <strong>🔒 Relato Privado:</strong> ${r[8]}
                 </div>` : "";
 
+            // RESTAURANDO OS BOTÕES DE CONTROLE AQUI
             html += `
             <div class="item-ocorrencia" style="margin-top: 10px; border-left: 5px solid var(--gold); position: relative;">
                 <div style="float:right; display:flex; gap:5px;">
                     ${(souDono || souGestor) ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', false)" style="background:orange; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; font-size:10px;">Editar</button>` : ''}
-                    ${souGestor ? `<button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; font-size:10px;">Tratar</button>` : ''}
+                    ${souGestor ? `
+                        <button onclick="carregarParaEdicao('${r[0]}','${r[1]}','${r[3]}','${r[4]}','${r[5]}','${r[7]||""}','${r[8]||""}', true)" style="background:#1976d2; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; font-size:10px;">Tratar</button>
+                        <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">X</button>
+                    ` : ''}
                 </div>
                 <small><strong>${tri}</strong> | 📅 ${r[1]} | ✍️ ${r[2]}</small>
                 <p style="margin:8px 0; font-size:14px;">${r[5]}</p>
@@ -1369,6 +1371,7 @@ async function gravarOcorrencia() {
 
 </body>
 </html>
+
 
 
 
