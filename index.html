@@ -618,7 +618,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
         }
     }
 
-    async function gravarOcorrencia() {
+     async function gravarOcorrencia() {
     const tVal = document.getElementById('selTurma').value;
     const aVal = document.getElementById('selAluno').value;
     const rVal = document.getElementById('relatoTexto').value;
@@ -654,10 +654,16 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
         relatoGestaoFinal = window.relatoGestaoAntigo || "";
     }
 
-    // --- LÓGICA DE IDENTIFICAÇÃO PAS vs PROF ---
+    // --- LÓGICA DE IDENTIFICAÇÃO DE PREFIXO ---
     let prefixo = "Prof: ";
-    // Verifica se a disciplina ou o cargo contém "PAS"
-    if (disciplinaLogada.toUpperCase().includes("PAS") || cargoLogado.toUpperCase().includes("PAS")) {
+    
+    // Captura o cargo real do banco de dados (armazenado no localStorage) para garantir precisão
+    const dadosUsuario = JSON.parse(localStorage.getItem('diarioAcessoSobral') || '{}');
+    const cargoReal = (dadosUsuario.cargo || "").toUpperCase();
+    const disciplinaReal = (dadosUsuario.disciplina || "").toUpperCase();
+
+    // Se o cargo ou a disciplina contiverem "PAS", define o prefixo correto
+    if (cargoReal.includes("PAS") || disciplinaReal.includes("PAS")) {
         prefixo = "PAS: ";
     }
 
@@ -1328,6 +1334,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
 
 </body>
 </html>
+
 
 
 
