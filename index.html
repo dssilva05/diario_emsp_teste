@@ -281,9 +281,25 @@
                     <span>Foi enviada Advertência por Escrito?</span>
                 </label>
             </div>
+            
+            <label>Tipo de Ocorrência Comum:</label>
+<select id="selOcorrenciaRapida">
+    <option value="">-- Selecione uma opção (Opcional) --</option>
+    <option value="[⏰ Chegou atrasado] ">⏰ Chegou atrasado</option>
+    <option value="[🎒 Material desorganizado] ">🎒 Material desorganizado</option>
+    <option value="[📝 Atividades de sala incompletas] ">📝 Atividades de sala incompletas</option>
+    <option value="[❌ Não fez atividade de sala] ">❌ Não fez atividade de sala</option>
+    <option value="[🗣️ Teve atitude desrespeitosa] ">🗣️ Teve atitude desrespeitosa</option>
+    <option value="[🚪 Saiu de sala sem autorização] ">🚪 Saiu de sala sem autorização</option>
+    <option value="[💤 Desatento/sem interesse] ">💤 Desatento/sem interesse</option>
+    <option value="[🛠️ Danificou patrimônio da escola] ">🛠️ Danificou patrimônio da escola</option>
+    <option value="[🏠 Não fez atividade de casa] ">🏠 Não fez atividade de casa</option>
+    <option value="[👥 Bagunça/Conversa excessiva] ">👥 Bagunça/Conversa excessiva</option>
+    <option value="[📱 Uso indevido do celular] ">📱 Uso indevido do celular</option>
+</select>
 
-            <label id="labelRelato">Relato do Professor:</label>
-            <textarea id="relatoTexto" rows="5"></textarea>
+<label id="labelRelato">Descrição complementar (Opcional):</label>
+<textarea id="relatoTexto" rows="5" placeholder="Escreva aqui detalhes adicionais..."></textarea>
             <div id="containerTratativa"></div>
             <button class="btn-main" id="btnGravar" onclick="gravarOcorrencia()">Gravar no Diário</button>
         </div>
@@ -618,21 +634,28 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
         }
     }
 
-     async function gravarOcorrencia() {
+async function gravarOcorrencia() {
     const tVal = document.getElementById('selTurma').value;
     const aVal = document.getElementById('selAluno').value;
-    const rVal = document.getElementById('relatoTexto').value;
     const dVal = document.getElementById('dataOcorrenciaManual').value;
+    
+    // Novos campos de ocorrência rápida e relato
+    const opcaoRapida = document.getElementById('selOcorrenciaRapida').value; 
+    const rVal = document.getElementById('relatoTexto').value;
 
-    // Validação básica de campos obrigatórios
-    if (!dVal || !tVal || !aVal || !rVal.trim()) {
-        return alert("⚠️ Preencha Data, Turma, Aluno e Relato!");
+    // --- NOVA VALIDAÇÃO ACORDADA ---
+    // Barra apenas se: não tiver data OU turma OU aluno OU (não tiver opção rápida E nem texto)
+    if (!dVal || !tVal || !aVal || (opcaoRapida === "" && rVal.trim() === "")) {
+        return alert("⚠️ Preencha Data, Turma, Aluno e escolha uma Ocorrência ou escreva o Relato!");
     }
+
+    // Une a opção do select com o texto digitado (se houver)
+    const relatoFinal = (opcaoRapida + rVal).trim();
 
     let tratativaFinal = "";
     let relatoGestaoFinal = "";
 
-    // LÓGICA DE PRESERVAÇÃO E ATUALIZAÇÃO (Diretor vs Professor)
+    // LÓGICA DE PRESERVAÇÃO E ATUALIZAÇÃO (Diretor vs Professor) - Mantida original
     if (cargoLogado === "Diretor") {
         const selT = document.getElementById('selTratativa');
         const dtC = document.getElementById('dataConvocacao');
@@ -654,15 +677,12 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
         relatoGestaoFinal = window.relatoGestaoAntigo || "";
     }
 
-    // --- LÓGICA DE IDENTIFICAÇÃO DE PREFIXO ---
+    // --- LÓGICA DE IDENTIFICAÇÃO DE PREFIXO --- Mantida original
     let prefixo = "Prof: ";
-    
-    // Captura o cargo real do banco de dados (armazenado no localStorage) para garantir precisão
     const dadosUsuario = JSON.parse(localStorage.getItem('diarioAcessoSobral') || '{}');
     const cargoReal = (dadosUsuario.cargo || "").toUpperCase();
     const disciplinaReal = (dadosUsuario.disciplina || "").toUpperCase();
 
-    // Se o cargo ou a disciplina contiverem "PAS", define o prefixo correto
     if (cargoReal.includes("PAS") || disciplinaReal.includes("PAS")) {
         prefixo = "PAS: ";
     }
@@ -671,12 +691,11 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
     const dados = {
         acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
         id: idEditando || Date.now(),
-        // Formato: [Tipo] Prefixo Nome (Disciplina)
         professor: `[${document.getElementById('selTipoRegistro').value}] ${prefixo}${profNomeLogado.split(" ")[0]} (${disciplinaLogada})`,
         dataManual: dVal.split("-").reverse().join("/"),
         turma: tVal,
         aluno: aVal,
-        texto: rVal,
+        texto: relatoFinal, // Enviando o relato combinado (Opção + Texto)
         advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
         tratativa: tratativaFinal,
         relatoGestao: relatoGestaoFinal
@@ -926,7 +945,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
     // Ajuste da data principal
     const p = data.split('/');
     if(p.length === 3) document.getElementById('dataOcorrenciaManual').value = `${p[2]}-${p[1]}-${p[0]}`;
-    
+    document.getElementById('selOcorrenciaRapida').value = "";
     document.getElementById('selTurma').value = turma;
     atualizarAlunos('selTurma', 'selAluno');
     
@@ -1214,6 +1233,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
     function limparForm() {
     // 1. Limpa os campos visíveis
     document.getElementById('relatoTexto').value = "";
+    document.getElementById('selOcorrenciaRapida').value = ""; // Acrescentado: Reseta o dropdown
     document.getElementById('containerTratativa').innerHTML = "";
     document.getElementById('containerTratativa').classList.add('hidden');
     
@@ -1221,10 +1241,10 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
     idEditando = null;
     document.getElementById('btnGravar').innerText = "Gravar no Diário";
     
-    // 3. LIMPA AS VARIÁVEIS DE MEMÓRIA (O erro está aqui!)
+    // 3. LIMPA AS VARIÁVEIS DE MEMÓRIA
     window.tratativaAntiga = "";
     window.relatoGestaoAntigo = "";
-    window.tratativaAtual = "";      // Limpa também as variações de nome
+    window.tratativaAtual = "";      
     window.relatoGestaoAtual = "";
 
     // 4. Reseta a data para hoje
@@ -1349,6 +1369,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
 
 </body>
 </html>
+
 
 
 
