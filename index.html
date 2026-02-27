@@ -356,6 +356,22 @@
     
     <button class="btn-main" style="background:orange; margin-top:15px;" onclick="transferirAluno()">Confirmar Mudança de Sala</button>
 </div>
+
+    <div class="card" style="border-left: 5px solid #d32f2f; margin-top: 20px;">
+    <h3 style="color:#d32f2f; margin-top:0;">❌ Remover Aluno da Lista</h3>
+    
+    <label>Selecione a Turma:</label>
+    <select id="selTurmaExcluir" onchange="atualizarAlunos('selTurmaExcluir', 'selAlunoExcluir')">
+        <option value="">Selecione a turma...</option>
+    </select>
+
+    <label>Aluno a ser removido:</label>
+    <select id="selAlunoExcluir">
+        <option value="">Selecione a turma primeiro...</option>
+    </select>
+
+    <button class="btn-main" style="background:#d32f2f; margin-top:15px;" onclick="excluirAluno()">Excluir Aluno Definitivamente</button>
+</div>
         </div>
     </div>
 </div>
@@ -563,7 +579,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
 
     function popularTurmas() {
     // Adicionado 'selTurmaTransf' na lista
-    const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino', 'selTurmaTransf'];
+    const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino', 'selTurmaTransf', 'selTurmaExcluir'];
     const turmas = Object.keys(ALUNOS).sort();
     ids.forEach(id => {
         const sel = document.getElementById(id);
@@ -755,6 +771,26 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
     } catch (e) {
         console.error(e);
         rDiv.innerHTML = "Erro ao carregar dados.";
+    }
+}
+
+    async function excluirAluno() {
+    const aluno = document.getElementById('selAlunoExcluir').value;
+    const turma = document.getElementById('selTurmaExcluir').value;
+
+    if (!aluno || aluno === "TODA A TURMA") return alert("Selecione um aluno!");
+
+    const confirmacao = confirm(`⚠️ ATENÇÃO: Você deseja excluir o aluno ${aluno} da turma ${turma}?\n\nEsta ação removerá o nome dele da lista de chamadas.`);
+    if (!confirmacao) return;
+
+    const url = `${SCRIPT_URL}?acao=excluirAluno&aluno=${encodeURIComponent(aluno)}&turma=${turma}`;
+    
+    try {
+        const res = await fetch(url);
+        alert("Aluno removido com sucesso!");
+        carregarDadosIniciais(); // Atualiza sua lista local no celular
+    } catch (e) {
+        alert("Erro ao excluir aluno.");
     }
 }
 
@@ -1285,6 +1321,7 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
 
 </body>
 </html>
+
 
 
 
