@@ -1080,7 +1080,7 @@ async function gravarOcorrencia() {
             const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
-            const tratativaRaw = (data[i][7] || "").split(" (")[0].trim() || "Sem ação da gestão";
+            const tratativaRaw = (data[i][7] || "").split(" (")[0].trim();
 
             // Contagem por Turno
             if (turma) {
@@ -1099,12 +1099,17 @@ async function gravarOcorrencia() {
                 detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;
             }
 
+            
+
             // Extração do Tipo [Entre Colchetes]
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
             
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
-            contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
+            
+            if (tratativaRaw !== "") {
+                contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
+            }
         }
 
         // --- FUNÇÕES DE RENDERIZAÇÃO INTERNAS ---
@@ -1371,6 +1376,7 @@ async function gravarOcorrencia() {
 
 </body>
 </html>
+
 
 
 
