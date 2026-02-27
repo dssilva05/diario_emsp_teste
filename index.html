@@ -509,8 +509,43 @@
     
     // Lista de cargos de gestão
     const gestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA", "PAS"];
-    cargoLogado = gestores.some(c => cp.includes(c)) ? "Diretor" : "Professor";
+    const ehGestao = gestores.some(c => cp.includes(c));
+    const ehAEE = cp.includes("AEE");
     
+cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
+
+    // 2. Trava do Select de Tipos de Registro
+    const selTipo = document.getElementById('selTipoRegistro');
+    if (selTipo) {
+        if (cargoLogado === "Professor") {
+            // Se for professor comum, remove as opções restritas
+            // Mantemos apenas Disciplinar e Pedagógica
+            selTipo.innerHTML = `
+                <option value="📝 Ocorrência Disciplinar">📝 Ocorrência Disciplinar</option>
+                <option value="📚 Ocorrência Pedagógica">📚 Ocorrência Pedagógica</option>
+            `;
+        } else if (cargoLogado === "AEE") {
+            // Se for Professor AEE, ele vê as dele + as básicas se desejar
+            selTipo.innerHTML = `
+                <option value="♿ Atendimento AEE">♿ Atendimento AEE</option>
+                <option value="📝 Ocorrência Disciplinar">📝 Ocorrência Disciplinar</option>
+                <option value="📚 Ocorrência Pedagógica">📚 Ocorrência Pedagógica</option>
+            `;
+        } else {
+            // Gestão continua vendo TUDO
+            selTipo.innerHTML = `
+                <option value="📝 Ocorrência Disciplinar">📝 Ocorrência Disciplinar</option>
+                <option value="📚 Ocorrência Pedagógica">📚 Ocorrência Pedagógica</option>
+                <option value="👪 Reunião com a Família">👪 Reunião com a Família</option>
+                <option value="🏥 Saúde (Doente / Machucou)">🏥 Saúde (Doente / Machucou)</option>
+                <option value="🧠 Equipe PAS">🧠 Equipe PAS</option>
+                <option value="♿ Atendimento AEE">♿ Atendimento AEE</option>
+                <option value="📎 Outros Atendimentos">📎 Outros Atendimentos</option>
+            `;
+        }
+    }
+    
+
     document.getElementById('secaoAcesso').classList.add('hidden');
     document.getElementById('conteudoDiario').classList.remove('hidden');
     document.getElementById('nomeProfLogado').value = profNomeLogado;
@@ -1250,6 +1285,7 @@
 
 </body>
 </html>
+
 
 
 
