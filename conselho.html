@@ -6,107 +6,186 @@
     <title>Painel de Conselho de Classe - Sobral Pinto</title>
     <style>
         :root { --blue: #0d47a1; --gold: #ffd600; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
-        .dashboard-header { background: var(--blue); color: white; padding: 20px; border-radius: 8px; border-bottom: 5px solid var(--gold); margin-bottom: 20px; text-align: center; }
-        .filtros { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: flex-end; }
-        .card { background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .grid-conselho { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .pedagogico { border-left: 8px solid #4caf50; }
-        .disciplinar { border-left: 8px solid #f44336; }
-        .analise-ia { background: #e3f2fd; padding: 15px; border-radius: 8px; font-style: italic; color: #0d47a1; border: 1px solid #bbdefb; }
-        select, button { padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: var(--blue); color: white; border: none; cursor: pointer; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
-        .alerta { color: red; font-weight: bold; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f7f6; 
+            margin: 0; 
+            padding: 10px; /* Reduzido para ganhar espaço */
+        }
+        
+        .dashboard-header { 
+            background: var(--blue); 
+            color: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border-bottom: 5px solid var(--gold); 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
+
+        /* Ajuste de Largura Total */
+        .container-conselho {
+            width: 98%; 
+            margin: 0 auto;
+        }
+
+        .filtros { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            display: flex; 
+            flex-wrap: wrap; /* Garante que quebre no celular */
+            gap: 15px; 
+            align-items: flex-end; 
+            margin-bottom: 20px;
+        }
+
+        .card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; /* Espaço entre os cards empilhados */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            width: 100%; /* Força ocupação total */
+            box-sizing: border-box;
+        }
+
+        /* Layout em Coluna Única */
+        .grid-conselho { 
+            display: block; 
+        }
+
+        .pedagogico { border-left: 10px solid #4caf50; }
+        .disciplinar { border-left: 10px solid #f44336; }
+        
+        .analise-ia { 
+            background: #e3f2fd; 
+            padding: 20px; 
+            border-radius: 8px; 
+            font-size: 16px;
+            line-height: 1.6;
+            color: #0d47a1; 
+            border: 1px solid #bbdefb; 
+        }
+
+        select, button { padding: 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px; }
+        button { background: var(--blue); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { background: #08306b; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background: #f8f9fa; color: var(--blue); }
+        .alerta { color: red; font-weight: bold; background: #fff5f5; padding: 4px 8px; border-radius: 4px; }
+        
+        h3 { margin-top: 0; color: var(--blue); text-transform: uppercase; font-size: 16px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div class="dashboard-header">
-    <h1>🎓 Portal do Conselho de Classe</h1>
-    <p>Escola Municipal Sobral Pinto | Diagnóstico Geral por Turma</p>
-</div>
-
-<div class="filtros">
-    <div>
-        <label>Selecione a Turma:</label><br>
-        <select id="selTurma"></select>
-    </div>
-    <div>
-        <label>Período:</label><br>
-        <select id="selTrimestre">
-            <option value="Todos">Todos os Trimestres</option>
-            <option value="1º Trimestre">1º Trimestre</option>
-            <option value="2º Trimestre">2º Trimestre</option>
-            <option value="3º Trimestre">3º Trimestre</option>
-        </select>
-    </div>
-    <button onclick="carregarConselho()">📊 Gerar Relatório de Conselho</button>
-</div>
-
-<div id="conteudoRelatorio" style="display:none;">
-    <div class="card">
-        <h3>🤖 Parâmetro Geral Disciplinar (Análise Lógica)</h3>
-        <div id="iaAnalise" class="analise-ia"></div>
+<div class="container-conselho">
+    <div class="dashboard-header">
+        <h1>🎓 Portal do Conselho de Classe</h1>
+        <p>Escola Municipal Sobral Pinto | Diagnóstico Geral por Turma</p>
     </div>
 
-    <div class="grid-conselho">
-        <div class="card pedagogico">
-            <h3>📚 Ocorrências Pedagógicas</h3>
-            <div id="tabelaPedagogica"></div>
+    <div class="filtros">
+        <div>
+            <label>Selecione a Turma:</label><br>
+            <select id="selTurma"></select>
         </div>
-        <div class="card disciplinar">
-            <h3>⚠️ Alunos com maior recorrência (Atenção)</h3>
-            <div id="tabelaDisciplinar"></div>
+        <div>
+            <label>Período:</label><br>
+            <select id="selTrimestre">
+                <option value="Todos">Todos os Trimestres</option>
+                <option value="1º Trimestre">1º Trimestre</option>
+                <option value="2º Trimestre">2º Trimestre</option>
+                <option value="3º Trimestre">3º Trimestre</option>
+            </select>
+        </div>
+        <button onclick="carregarConselho()">📊 Gerar Relatório de Conselho</button>
+    </div>
+
+    <div id="conteudoRelatorio" style="display:none;">
+        <div class="card">
+            <h3>🤖 Parâmetro Geral Disciplinar (Análise Lógica)</h3>
+            <div id="iaAnalise" class="analise-ia"></div>
+        </div>
+
+        <div class="grid-conselho">
+            <div class="card pedagogico">
+                <h3>📚 Ocorrências Pedagógicas (Dificuldades de Aprendizagem)</h3>
+                <div id="tabelaPedagogica"></div>
+            </div>
+
+            <div class="card disciplinar">
+                <h3>⚠️ Alunos com maior recorrência (Atenção Disciplinar)</h3>
+                <div id="tabelaDisciplinar"></div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlVbz3C-bdKUbRvuWx4SrL9eiFdmyRwwZwUYVhi9u8u2df9NSgNRNjsYx7gD5q1qef7g/exec"; // Use a mesma URL da outra aba
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlVbz3C-bdKUbRvuWx4SrL9eiFdmyRwwZwUYVhi9u8u2df9NSgNRNjsYx7gD5q1qef7g/exec";
 
-    // Carrega as turmas ao abrir
     window.onload = async () => {
-        const res = await fetch(`${SCRIPT_URL}?acao=getListaAlunos`);
-        const turmas = await res.json();
-        const sel = document.getElementById('selTurma');
-        Object.keys(turmas).sort().forEach(t => sel.add(new Option(t, t)));
+        try {
+            const res = await fetch(`${SCRIPT_URL}?acao=getListaAlunos`);
+            const turmas = await res.json();
+            const sel = document.getElementById('selTurma');
+            Object.keys(turmas).sort().forEach(t => sel.add(new Option(t, t)));
+        } catch(e) { console.error("Erro ao carregar turmas"); }
     };
 
     async function carregarConselho() {
         const turma = document.getElementById('selTurma').value;
         const tri = document.getElementById('selTrimestre').value;
+        const btn = document.querySelector('button');
+        
+        if(!turma) return alert("Selecione uma turma!");
+        
+        btn.innerText = "⏳ Processando...";
         document.getElementById('conteudoRelatorio').style.display = 'block';
 
-        const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
-        let data = await res.json();
-        data.shift(); // Remove cabeçalho
+        try {
+            const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
+            let data = await res.json();
+            data.shift(); 
 
-        // Filtro por turma e período
-        let filtrados = data.filter(r => r[3] === turma);
-        if(tri !== "Todos") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === tri);
+            let filtrados = data.filter(r => String(r[3]).trim() === turma);
+            if(tri !== "Todos") filtrados = filtrados.filter(r => identificarTrimestre(r[1]) === tri);
 
-        processarIA(filtrados, turma);
-        processarTabelas(filtrados);
+            processarIA(filtrados, turma);
+            processarTabelas(filtrados);
+        } catch(e) {
+            alert("Erro ao buscar dados.");
+        } finally {
+            btn.innerText = "📊 Gerar Relatório de Conselho";
+        }
     }
 
     function processarIA(dados, turma) {
         const total = dados.length;
-        const pedag = dados.filter(r => r[2].includes("Pedagógica")).length;
+        if(total === 0) {
+            document.getElementById('iaAnalise').innerHTML = "Nenhum registro encontrado para esta turma no período selecionado.";
+            return;
+        }
+
+        const pedag = dados.filter(r => String(r[2]).includes("Pedagógica")).length;
         const discip = total - pedag;
         
-        // Simulação de IA baseada em lógica de dados
-        let texto = `Para a turma ${turma}, foram analisados ${total} registros. `;
+        let texto = `<b>Análise Técnica:</b> Para a turma <b>${turma}</b>, foram analisados <b>${total}</b> registros. `;
+        
         if (discip > pedag) {
-            texto += `O clima disciplinar exige maior atenção que o pedagógico. `;
+            texto += `O clima disciplinar exige maior atenção imediata da equipe, superando as demandas pedagógicas em volume. `;
         } else {
-            texto += `A turma demonstra maior engajamento disciplinar, porém com dificuldades de aprendizagem acentuadas. `;
+            texto += `A turma demonstra maior estabilidade disciplinar, porém as dificuldades de aprendizagem são o foco principal de atenção. `;
         }
         
         const topAluno = encontrarTopAluno(dados);
-        if(topAluno.qtd > 5) {
-            texto += `Notou-se que o aluno ${topAluno.nome} possui um índice de recorrência de ${topAluno.qtd} registros, impactando o fluxo das aulas.`;
+        if(topAluno.qtd > 4) {
+            texto += `<br><br>⚠️ <b>Ponto de Atenção:</b> O aluno <b>${topAluno.nome}</b> concentra um índice elevado de recorrência (${topAluno.qtd} registros), o que sugere a necessidade de uma análise individualizada em conselho.`;
         }
 
         document.getElementById('iaAnalise').innerHTML = texto;
@@ -114,23 +193,29 @@
 
     function processarTabelas(dados) {
         // Tabela Pedagógica
-        const pedag = dados.filter(r => r[2].includes("Pedagógica"));
-        let htmlPed = "<table><tr><th>Aluno</th><th>Descrição</th><th>Data</th></tr>";
-        pedag.forEach(r => {
-            htmlPed += `<tr><td>${r[4]}</td><td>${r[5]}</td><td>${r[1]}</td></tr>`;
-        });
-        document.getElementById('tabelaPedagogica').innerHTML = htmlPed + "</table>";
-
-        // Tabela de Recorrência Disciplinar (Alunos que mais aparecem)
-        const contagem = {};
-        dados.forEach(r => { if(!r[2].includes("Pedagógica")) contagem[r[4]] = (contagem[r[4]] || 0) + 1 });
-        const ranking = Object.entries(contagem).sort((a,b) => b[1]-a[1]).slice(0,5);
+        const pedag = dados.filter(r => String(r[2]).includes("Pedagógica"));
+        let htmlPed = "<table><thead><tr><th>Aluno</th><th>Descrição</th><th>Data</th></tr></thead><tbody>";
         
-        let htmlDisc = "<table><tr><th>Aluno</th><th>Frequência</th></tr>";
-        ranking.forEach(([nome, qtd]) => {
-            htmlDisc += `<tr><td>${nome}</td><td class="${qtd > 3 ? 'alerta' : ''}">${qtd} ocorrências</td></tr>`;
+        if(pedag.length === 0) htmlPed += "<tr><td colspan='3'>Nenhum registro pedagógico.</td></tr>";
+        
+        pedag.forEach(r => {
+            htmlPed += `<tr><td><b>${r[4]}</b></td><td>${r[5]}</td><td>${r[1]}</td></tr>`;
         });
-        document.getElementById('tabelaDisciplinar').innerHTML = htmlDisc + "</table>";
+        document.getElementById('tabelaPedagogica').innerHTML = htmlPed + "</tbody></table>";
+
+        // Tabela Disciplinar
+        const contagem = {};
+        dados.forEach(r => { if(!String(r[2]).includes("Pedagógica")) contagem[r[4]] = (contagem[r[4]] || 0) + 1 });
+        const ranking = Object.entries(contagem).sort((a,b) => b[1]-a[1]).slice(0,10);
+        
+        let htmlDisc = "<table><thead><tr><th>Aluno</th><th>Frequência de Ocorrências</th></tr></thead><tbody>";
+        
+        if(ranking.length === 0) htmlDisc += "<tr><td colspan='2'>Nenhum registro disciplinar.</td></tr>";
+
+        ranking.forEach(([nome, qtd]) => {
+            htmlDisc += `<tr><td><b>${nome}</b></td><td><span class="${qtd > 3 ? 'alerta' : ''}">${qtd} registros</span></td></tr>`;
+        });
+        document.getElementById('tabelaDisciplinar').innerHTML = htmlDisc + "</tbody></table>";
     }
 
     function encontrarTopAluno(dados) {
@@ -141,10 +226,13 @@
     }
 
     function identificarTrimestre(ds) { 
-        if(!ds) return ""; let p = ds.split('/'); let d = new Date(p[2], p[1]-1, p[0]);
+        if(!ds) return ""; 
+        let p = ds.split('/'); 
+        let d = new Date(p[2], p[1]-1, p[0]);
         if (d >= new Date(2026, 1, 4) && d <= new Date(2026, 4, 6)) return "1º Trimestre";
         if (d >= new Date(2026, 4, 7) && d <= new Date(2026, 7, 31)) return "2º Trimestre";
         if (d >= new Date(2026, 8, 1) && d <= new Date(2026, 11, 18)) return "3º Trimestre";
+        return "Fora de Período";
     }
 </script>
 
