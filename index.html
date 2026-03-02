@@ -1220,14 +1220,14 @@ async function gravarOcorrencia() {
     }
 
     function tab(n) {
-    // 1. Bloqueio de Segurança: Se for a aba 4 e não for Diretor, cancela.
-    if (n === 4 && cargoLogado !== "Diretor") {
+    // 1. Bloqueio de Segurança: Apenas Diretor acessa Cadastro (4) e Conselho (5)
+    if ((n === 4 || n === 5) && cargoLogado !== "Diretor") {
         alert("Acesso restrito à equipe de gestão.");
         return;
     }
 
-    // 2. Lógica de alternância (Loop em todas as 4 abas)
-    [1, 2, 3, 4].forEach(i => {
+    // 2. Lógica de alternância (Loop em todas as 5 abas agora)
+    [1, 2, 3, 4, 5].forEach(i => {
         const aba = document.getElementById('aba' + i);
         const btn = document.getElementById('t' + i);
         
@@ -1244,7 +1244,15 @@ async function gravarOcorrencia() {
         }
     });
 
-    // 3. Funções específicas ao abrir a aba
+    // 3. Carregamento específico da Aba 5
+    if (n === 5) {
+        const frame = document.getElementById('frameConselho');
+        // Só carrega se o src ainda estiver vazio para economizar internet
+        if (frame.src === "about:blank" || frame.src === "") {
+            frame.src = "conselho.html";
+        }
+    }
+
     if (n === 4) carregarListaTransferencia();
     if (n === 1 && !idEditando) limparForm();
 }
@@ -1395,6 +1403,7 @@ async function gravarOcorrencia() {
 
 </body>
 </html>
+
 
 
 
