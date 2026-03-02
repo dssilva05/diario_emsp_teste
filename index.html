@@ -324,6 +324,14 @@
 
         <div id="aba3" class="hidden">
     <h2 style="color:var(--blue); margin-top:0;">📊 Controle Geral de Ocorrências</h2>
+    
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #bbdefb; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="color: #0d47a1; font-weight: bold; font-size: 14px;">🎓 Painel de Conselho de Classe</span>
+        <button onclick="abrirConselho()" style="background: #0d47a1; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            Conselho de Classe →
+        </button>
+    </div>
+    
     <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar ocorrências</button>
     
     <div id="resDashboard" class="hidden">
@@ -1372,10 +1380,17 @@ async function gravarOcorrencia() {
     container.classList.remove('hidden');
     container.scrollIntoView({ behavior: 'smooth' });
 }
+
+
+    function abrirConselho() {
+    // Abre a página do conselho em uma nova aba do navegador
+    window.open('conselho.html', '_blank');
+}
 </script>
 
 </body>
 </html>
+
 
 
 
