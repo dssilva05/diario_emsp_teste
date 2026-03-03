@@ -273,7 +273,9 @@
                 </select>
             </div>
             <label>Responsável:</label>
-            <input type="text" id="nomeProfLogado" readonly style="background:#e9ecef">
+                <div id="containerResponsavel">
+                    <input type="text" id="nomeProfLogado" readonly style="background:#e9ecef">
+                </div>
             <label>Data:</label>
             <input type="date" id="dataOcorrenciaManual">
             <label>Turma:</label>
@@ -459,6 +461,7 @@
     // Tenta atualizar do servidor
     if (navigator.onLine) { 
         carregarDadosIniciais(); 
+        carregarProfessores();
     }
     
     atualizarStatusRede();
@@ -616,6 +619,33 @@ cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
     }
 
     definirDataHoje(); popularTurmas(); ajustarCamposRegistro();
+
+        // ... código anterior da função aplicarLogin ...
+    
+    const contResp = document.getElementById('containerResponsavel');
+    if (ehGestao) {
+        // Se for Gestão, transforma em Select
+        let options = LISTA_PROFESSORES.map(p => `<option value="${p.nome} (${p.disciplina})">${p.nome} (${p.disciplina})</option>`).join('');
+        contResp.innerHTML = `
+            <select id="nomeProfLogado" style="background:#fff3e0; border: 2px solid orange;">
+                <option value="${profNomeLogado} (${disciplinaLogada})">Lançar como: ${profNomeLogado} (Minha conta)</option>
+                <optgroup label="Selecionar Professor:">
+                    ${options}
+                </optgroup>
+            </select>
+            <p style="font-size:10px; color:orange; margin:5px 0 0;">💡 Gestor: Você pode alterar o responsável por esta ocorrência.</p>`;
+    } else {
+        contResp.innerHTML = `<input type="text" id="nomeProfLogado" value="${profNomeLogado}" readonly style="background:#e9ecef">`;
+    }
+}
+
+    let LISTA_PROFESSORES = [];
+
+async function carregarProfessores() {
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=getListaProfessores`);
+        LISTA_PROFESSORES = await res.json();
+    } catch (e) { console.error("Erro ao carregar lista de professores"); }
 }
 
     function popularTurmas() {
@@ -1408,6 +1438,7 @@ async function gravarOcorrencia() {
 
 </body>
 </html>
+
 
 
 
