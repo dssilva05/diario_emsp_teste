@@ -730,6 +730,8 @@ async function gravarOcorrencia() {
     const dadosUsuario = JSON.parse(localStorage.getItem('diarioAcessoSobral') || '{}');
     const cargoReal = (dadosUsuario.cargo || "").toUpperCase();
     const disciplinaReal = (dadosUsuario.disciplina || "").toUpperCase();
+    const respSelecionado = document.getElementById('nomeProfLogado').value;
+    const professorFinal = `[${document.getElementById('selTipoRegistro').value}] ${prefixo}${respSelecionado}`;
 
     if (cargoReal.includes("PAS") || disciplinaReal.includes("PAS")) {
         prefixo = "PAS: ";
@@ -737,9 +739,9 @@ async function gravarOcorrencia() {
 
     // Montagem do objeto de dados para envio
     const dados = {
-        acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
+acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
         id: idEditando || Date.now(),
-        professor: `[${document.getElementById('selTipoRegistro').value}] ${prefixo}${profNomeLogado.split(" ")[0]} (${disciplinaLogada})`,
+        professor: professorFinal,
         dataManual: dVal.split("-").reverse().join("/"),
         turma: tVal,
         aluno: aVal,
@@ -1438,6 +1440,7 @@ async function gravarOcorrencia() {
 
 </body>
 </html>
+
 
 
 
