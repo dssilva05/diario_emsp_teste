@@ -249,6 +249,7 @@
         <button id="t1" class="tab-btn active" onclick="tab(1)">📝 INCLUIR</button>
         <button id="t2" class="tab-btn" onclick="tab(2)">🔍 CONSULTAR</button>
         <button id="t3" class="tab-btn" onclick="tab(3)">📊 ALERTAS</button>
+        <button id="t5" class="tab-btn hidden" onclick="tab(5)">👨‍🏫 FEEDBACK PROF</button>
         <button id="t4" class="tab-btn hidden" onclick="tab(4)">👥 CADASTRO</button>                                                          
         <button onclick="logout()" style="background:none; color:white; flex:0.3; cursor:pointer">Sair</button>
     </div>
@@ -392,6 +393,30 @@
     <button class="btn-main" style="background:#d32f2f; margin-top:15px;" onclick="excluirAluno()">Excluir Aluno Definitivamente</button>
 </div>
         </div>
+
+        <div id="aba5" class="hidden">
+    <h2 style="color:var(--blue); margin-top:0;">📋 Acompanhamento Pedagógico (Professores)</h2>
+    
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbdefb;">
+        <label>Professor(a):</label>
+        <input type="text" id="feedbackProfNome" list="listaProfessores" placeholder="Selecione o professor...">
+        
+        <label>Data do Atendimento:</label>
+        <input type="date" id="feedbackData">
+        
+        <label>Pauta / Assunto:</label>
+        <textarea id="feedbackTexto" rows="4" placeholder="Descreva os pontos tratados, orientações pedagógicas e combinados..."></textarea>
+        
+        <button class="btn-main" style="background:#1976d2; margin-top:10px;" onclick="gravarFeedbackPedagogico()">💾 Registrar Conversa</button>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
+    
+    <h3 style="color:var(--blue);">🔍 Consultar Evolução</h3>
+    <input type="text" id="buscaFeedbackProf" list="listaProfessores" placeholder="Filtrar por professor..." onkeyup="filtrarFeedbacks()">
+    <div id="resFeedback" style="margin-top:15px;"></div>
+</div>
+        
     </div>
 </div>
 
@@ -554,6 +579,8 @@
     const gestores = ["DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA", "COORDENADOR", "COORDENADORA", "SUPERVISOR", "SUPERVISORA", "PAS"];
     const ehGestao = gestores.some(c => cp.includes(c));
     const ehAEE = cp.includes("AEE");
+    const gestoresFeedback = ["COORDENADOR", "COORDENADORA", "DIRETOR", "DIRETORA", "VICE-DIRETOR", "VICE-DIRETORA"];
+    const podeVerFeedback = gestoresFeedback.some(c => cp.includes(c));
     
     cargoLogado = ehGestao ? "Diretor" : (ehAEE ? "AEE" : "Professor");
 
@@ -563,6 +590,13 @@
     inputResp.readOnly = true; 
     inputResp.style.background = "#e9ecef"; 
     inputResp.style.border = "1px solid #ccc";
+
+    const btnFeedback = document.getElementById('t5');
+        if (podeVerFeedback) {
+        btnFeedback.classList.remove('hidden');
+            } else {
+        btnFeedback.classList.add('hidden');
+            }
 
     const seletorExistente = document.getElementById('containerMultiDisciplina');
     if (seletorExistente) seletorExistente.remove();
@@ -1335,31 +1369,22 @@ async function gravarOcorrencia() {
     }
 
     function tab(n) {
-    // 1. Bloqueio de Segurança: Se for a aba 4 e não for Diretor, cancela.
-    if (n === 4 && cargoLogado !== "Diretor") {
+    // Bloqueio de segurança para Abas de Gestão
+    if ((n === 4 || n === 5) && cargoLogado !== "Diretor") {
+        // Nota: O cargoLogado "Diretor" no seu código já engloba a gestão após o login
         alert("Acesso restrito à equipe de gestão.");
         return;
     }
 
-    // 2. Lógica de alternância (Loop em todas as 4 abas)
-    [1, 2, 3, 4].forEach(i => {
+    [1, 2, 3, 4, 5].forEach(i => { // Incluído o 5 aqui
         const aba = document.getElementById('aba' + i);
         const btn = document.getElementById('t' + i);
-        
-        if (aba) {
-            if (n === i) {
-                aba.classList.remove('hidden');
-            } else {
-                aba.classList.add('hidden');
-            }
-        }
-        
-        if (btn) {
-            btn.classList.toggle('active', n === i);
-        }
+        if (aba) aba.classList.toggle('hidden', n !== i);
+        if (btn) btn.classList.toggle('active', n === i);
     });
 
     // 3. Funções específicas ao abrir a aba
+    if (n === 5) consultarFeedbacks();
     if (n === 4) carregarListaTransferencia();
     if (n === 1 && !idEditando) limparForm();
 }
@@ -1512,6 +1537,81 @@ async function gravarOcorrencia() {
     container.classList.remove('hidden');
     container.scrollIntoView({ behavior: 'smooth' });
 }
+
+    async function gravarFeedbackPedagogico() {
+    const prof = document.getElementById('feedbackProfNome').value;
+    const data = document.getElementById('feedbackData').value;
+    const texto = document.getElementById('feedbackTexto').value;
+
+    if (!prof || !data || !texto) return alert("Preencha todos os campos.");
+
+    const dados = {
+        acao: 'salvarFeedback', // Você precisará criar esse case no seu Google Apps Script
+        professorAlvo: prof,
+        quemRegistrou: profNomeLogado,
+        data: data.split("-").reverse().join("/"),
+        relato: texto
+    };
+
+    if (!navigator.onLine) return alert("Ação disponível apenas online.");
+
+    try {
+        const p = new URLSearchParams();
+        for (let k in dados) p.append(k, dados[k]);
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+        
+        alert("✅ Registro pedagógico salvo!");
+        document.getElementById('feedbackTexto').value = "";
+        consultarFeedbacks();
+    } catch (e) {
+        alert("Erro ao salvar registro.");
+    }
+}
+
+async function consultarFeedbacks() {
+    const resDiv = document.getElementById('resFeedback');
+    resDiv.innerHTML = "Carregando registros...";
+    
+    try {
+        const res = await fetch(`${SCRIPT_URL}?acao=getFeedbacks`); // Criar essa acao no Apps Script
+        const dados = await res.json();
+        window.LISTA_FEEDBACKS = dados; // Salva para filtro local
+        renderizarFeedbacks(dados);
+    } catch (e) {
+        resDiv.innerHTML = "Erro ao carregar feedbacks.";
+    }
+}
+
+function renderizarFeedbacks(dados) {
+    const resDiv = document.getElementById('resFeedback');
+    if (!dados || dados.length <= 1) {
+        resDiv.innerHTML = "Nenhum registro encontrado.";
+        return;
+    }
+
+    let html = "";
+    // Pula o cabeçalho da planilha (i=1)
+    for (let i = 1; i < dados.length; i++) {
+        html += `
+        <div class="item-ocorrencia" style="border-left-color: #1976d2;">
+            <small>📅 ${dados[i][3]} | 👤 Prof: <b>${dados[i][1]}</b></small><br>
+            <small>✍️ Registrado por: ${dados[i][2]}</small>
+            <p style="margin-top:10px; font-size:14px; color:#333;">${dados[i][4]}</p>
+        </div>`;
+    }
+    resDiv.innerHTML = html;
+}
+
+function filtrarFeedbacks() {
+    const busca = document.getElementById('buscaFeedbackProf').value.toUpperCase();
+    const filtrados = window.LISTA_FEEDBACKS.filter((r, index) => {
+        if (index === 0) return false;
+        return r[1].toUpperCase().includes(busca);
+    });
+    // Adiciona o cabeçalho fake para manter a estrutura da função de renderizar
+    renderizarFeedbacks([[], ...filtrados]);
+}
+    
 </script>
 
 </body>
