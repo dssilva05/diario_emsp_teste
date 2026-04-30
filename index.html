@@ -1538,6 +1538,49 @@ async function gravarOcorrencia() {
     container.scrollIntoView({ behavior: 'smooth' });
 }
 
+    let idFeedbackEditando = null; // Variável global para controle
+
+function prepararEdicaoFeedback(id, professor, data, relato) {
+    idFeedbackEditando = id;
+    
+    // Preenche os campos do formulário no topo da aba 5
+    document.getElementById('feedbackProfNome').value = professor;
+    
+    // Converte data dd/mm/aaaa para yyyy-mm-dd para o input date
+    const partes = data.split('/');
+    if(partes.length === 3) {
+        document.getElementById('feedbackData').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
+    }
+    
+    document.getElementById('feedbackTexto').value = relato;
+    
+    // Altera o botão para modo de edição
+    const btn = document.querySelector("#aba5 .btn-main");
+    btn.innerText = "💾 Salvar Alterações";
+    btn.style.background = "#ef6c00";
+    
+    // Rola para o topo do formulário
+    document.getElementById('aba5').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function excluirFeedback(id) {
+    if (!confirm("Deseja realmente excluir este registro pedagógico?")) return;
+    
+    if (!navigator.onLine) return alert("Ação disponível apenas online.");
+
+    const p = new URLSearchParams();
+    p.append('acao', 'excluirFeedback');
+    p.append('id', id);
+
+    try {
+        await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+        alert("✅ Registro excluído.");
+        consultarFeedbacks(); // Atualiza a lista
+    } catch (e) {
+        alert("Erro ao excluir registro.");
+    }
+}
+
     async function gravarFeedbackPedagogico() {
     const prof = document.getElementById('feedbackProfNome').value;
     const data = document.getElementById('feedbackData').value;
@@ -1546,25 +1589,31 @@ async function gravarOcorrencia() {
     if (!prof || !data || !texto) return alert("Preencha todos os campos.");
 
     const dados = {
-        acao: 'salvarFeedback', // Você precisará criar esse case no seu Google Apps Script
+        acao: idFeedbackEditando ? 'editarFeedback' : 'salvarFeedback',
+        id: idFeedbackEditando || Date.now(),
         professorAlvo: prof,
         quemRegistrou: profNomeLogado,
         data: data.split("-").reverse().join("/"),
         relato: texto
     };
 
-    if (!navigator.onLine) return alert("Ação disponível apenas online.");
-
     try {
         const p = new URLSearchParams();
         for (let k in dados) p.append(k, dados[k]);
         await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
         
-        alert("✅ Registro pedagógico salvo!");
+        alert(idFeedbackEditando ? "✅ Alteração salva!" : "✅ Registro salvo!");
+        
+        // Reseta o formulário
+        idFeedbackEditando = null;
         document.getElementById('feedbackTexto').value = "";
+        const btn = document.querySelector("#aba5 .btn-main");
+        btn.innerText = "💾 Registrar Conversa";
+        btn.style.background = "#1976d2";
+        
         consultarFeedbacks();
     } catch (e) {
-        alert("Erro ao salvar registro.");
+        alert("Erro ao processar solicitação.");
     }
 }
 
@@ -1590,13 +1639,29 @@ function renderizarFeedbacks(dados) {
     }
 
     let html = "";
-    // Pula o cabeçalho da planilha (i=1)
+    // i=0 é o cabeçalho, os dados começam em i=1
     for (let i = 1; i < dados.length; i++) {
+        const id = dados[i][0];
+        const profAlvo = dados[i][1];
+        const quemRegistrou = dados[i][2];
+        const dataStr = dados[i][3];
+        const relato = dados[i][4];
+
         html += `
-        <div class="item-ocorrencia" style="border-left-color: #1976d2;">
-            <small>📅 ${dados[i][3]} | 👤 Prof: <b>${dados[i][1]}</b></small><br>
-            <small>✍️ Registrado por: ${dados[i][2]}</small>
-            <p style="margin-top:10px; font-size:14px; color:#333;">${dados[i][4]}</p>
+        <div class="item-ocorrencia" style="border-left: 5px solid #1976d2; position: relative; margin-bottom:15px;">
+            <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px;">
+                <button onclick="prepararEdicaoFeedback('${id}', '${profAlvo}', '${dataStr}', \`${relato}\`)" 
+                        style="background:orange; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">
+                    Editar
+                </button>
+                <button onclick="excluirFeedback('${id}')" 
+                        style="background:#d32f2f; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">
+                    Excluir
+                </button>
+            </div>
+            <small>📅 ${dataStr} | 👤 Prof: <b>${profAlvo}</b></small><br>
+            <small>✍️ Registrado por: ${quemRegistrou}</small>
+            <p style="margin-top:10px; font-size:14px; color:#333; line-height:1.4;">${relato}</p>
         </div>`;
     }
     resDiv.innerHTML = html;
