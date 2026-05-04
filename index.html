@@ -1469,7 +1469,6 @@ function renderPizza(obj, titulo) {
 
     function mostrarDetalhesTurma(turma) {
     const container = document.getElementById('detalheAlunosTurma');
-    // window.dadosDetalhados deve ser alimentado na gerarAlertaCritico
     const alunos = window.detalheGlobal[turma]; 
 
     if (!alunos) {
@@ -1480,15 +1479,19 @@ function renderPizza(obj, titulo) {
     const listaOrdenada = Object.entries(alunos).sort((a, b) => b[1] - a[1]);
     
     let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h4 style="margin:0; color:var(--blue);">Alunos com Ocorrência: Turma ${turma}</h4>
+                    <h4 style="margin:0; color:var(--blue);">Turma ${turma}: Clique no nome para filtrar</h4>
                     <button onclick="document.getElementById('detalheAlunosTurma').classList.add('hidden')" style="border:none; background:none; cursor:pointer; font-weight:bold; color:red;">[ Fechar ]</button>
                 </div>`;
     
     html += '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
     listaOrdenada.forEach(([nome, total]) => {
+        // Agora o nome chama a função irParaConsultaDireta, permitindo o redirecionamento
         html += `<tr style="border-bottom:1px solid #eee;">
-                    <td style="padding:8px; text-transform:uppercase;">${nome}</td>
-                    <td style="padding:8px; text-align:right;"><b>${total}</b></td>
+                    <td style="padding:8px; text-transform:uppercase; color:var(--blue); cursor:pointer; text-decoration:underline;" 
+                        onclick="irParaConsultaDireta('${nome}', '${turma}')">
+                        ${nome}
+                    </td>
+                    <td style="padding:8px; text-align:right;"><b>${total} reg.</b></td>
                  </tr>`;
     });
     html += '</table>';
