@@ -1235,12 +1235,15 @@ async function gravarOcorrencia() {
         const data = await res.json();
 
         let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
-        let contProfessores = {}; // Nova contagem
+        let contProfessores = {}; 
         let detalheTurmas = {};
         const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
         const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
 
         for (let i = 1; i < data.length; i++) {
+            // TRAVA DE SEGURANÇA: Ignora se a linha estiver vazia
+            if (!data[i] || !data[i][2] || !data[i][3]) continue;[cite: 4]
+
             const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
@@ -1248,39 +1251,77 @@ async function gravarOcorrencia() {
 
             // Contagem de Professores
             let nomeProfLimpo = profField.split('] ')[1] || profField;
-            contProfessores[nomeProfLimpo] = (contProfessores[nomeProfLimpo] || 0) + 1;
+            contProfessores[nomeProfLimpo] = (contProfessores[nomeProfLimpo] || 0) + 1;[cite: 4]
 
             if (turma) {
                 if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
-                else contManha[turma] = (contManha[turma] || 0) + 1;
+                else contManha[turma] = (contManha[turma] || 0) + 1;[cite: 4]
             }
 
             if (aluno && aluno !== "TODA A TURMA") {
                 const chave = `${aluno} (${turma})`;
-                contAlunos[chave] = (contAlunos[chave] || 0) + 1;
+                contAlunos[chave] = (contAlunos[chave] || 0) + 1;[cite: 4]
                 if (!detalheTurmas[turma]) detalheTurmas[turma] = {};
-                detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;
+                detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;[cite: 4]
             }
 
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
-            contTipos[tipo] = (contTipos[tipo] || 0) + 1;
-            if (tratativaRaw !== "") contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
+            contTipos[tipo] = (contTipos[tipo] || 0) + 1;[cite: 4]
+            if (tratativaRaw !== "") contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;[cite: 4]
         }
 
-        // Renderizações usando as novas funções auxiliares
-        document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(Object.entries(contAlunos).filter(a => a[1] >= 10)), 20);
-        document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
-        document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);
-        document.getElementById('listaProfessoresMaisOcorrencias').innerHTML = renderListaProfessores(contProfessores, 20);
-        document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
-        document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
+        // Renderizações
+        document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(Object.entries(contAlunos).filter(a => a[1] >= 10)), 20);[cite: 4]
+        document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");[cite: 4]
+        document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);[cite: 4]
+        document.getElementById('listaProfessoresMaisOcorrencias').innerHTML = renderListaProfessores(contProfessores, 20);[cite: 4]
+        document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");[cite: 4]
+        document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");[cite: 4]
 
-        window.detalheGlobal = detalheTurmas;
+        window.detalheGlobal = detalheTurmas;[cite: 4]
     } catch (e) { 
         console.error(e);
-        alert("Erro ao processar dados do Dashboard."); 
+        alert("Erro técnico: " + e.message); 
     }
+}
+    function renderColunas(obj, titulo) {
+    const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
+    if (!entradas.length) return "";
+    const max = Math.max(...Object.values(obj));
+    let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
+    const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
+    
+    entradas.forEach(([t, v]) => {
+        const altura = (v / max) * 100;
+        h += `<div class="column-wrapper">
+                <div class="column-value">${v}</div>
+                <div class="column-bar" style="height:${altura}%" onclick="mostrarDetalhesTurma('${t}')"></div>
+                <div class="column-label">${t}</div>
+              </div>`;
+    });
+    return h + `</div>`;
+}
+
+function renderPizza(obj, titulo) {
+    const dados = Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, 6);
+    const total = Object.values(obj).reduce((a, b) => a + b, 0);
+    if (total === 0) return "";
+    const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
+    let curr = 0;
+    const slices = dados.map(([lab, val], idx) => {
+        const p = (val / total) * 100;
+        const s = `${cores[idx % cores.length]} ${curr.toFixed(2)}% ${(curr + p).toFixed(2)}%`;
+        curr += p;
+        return { label: lab, val: val, color: cores[idx % cores.length], slice: s };
+    });
+    let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b>`;
+    h += `<div class="pie-chart" style="background: conic-gradient(${slices.map(s => s.slice).join(', ')})"></div>`;
+    h += `<ul class="pie-legend">`;
+    slices.forEach(s => {
+        h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`;
+    });
+    return h + `</ul>`;
 }
 
     document.getElementById('selAluno').addEventListener('change', function() {
