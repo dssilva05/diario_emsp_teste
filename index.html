@@ -1223,7 +1223,8 @@ async function gravarOcorrencia() {
     }
 }
 
-    async function gerarAlertaCritico() {
+    // --- FUNÇÃO DASHBOARD CORRIGIDA E PROTEGIDA ---
+async function gerarAlertaCritico() {
     if (!navigator.onLine) return alert("⚠️ Você está offline. Conecte-se para atualizar o Dashboard.");
     
     const dashboard = document.getElementById('resDashboard');
@@ -1241,64 +1242,60 @@ async function gravarOcorrencia() {
         const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
 
         for (let i = 1; i < data.length; i++) {
-            // TRAVA DE SEGURANÇA: Ignora se a linha estiver vazia
-            if (!data[i] || !data[i][2] || !data[i][3]) continue;[cite: 4]
+            // Ignora linhas vazias para não dar erro
+            if (!data[i] || !data[i][2]) continue;
 
             const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
             const tratativaRaw = (data[i][7] || "").split(" (")[0].trim();
 
-            // Contagem de Professores
+            // Ranking de Professores (Pega o nome após o colchete)
             let nomeProfLimpo = profField.split('] ')[1] || profField;
-            contProfessores[nomeProfLimpo] = (contProfessores[nomeProfLimpo] || 0) + 1;[cite: 4]
+            contProfessores[nomeProfLimpo] = (contProfessores[nomeProfLimpo] || 0) + 1;
 
             if (turma) {
                 if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
-                else contManha[turma] = (contManha[turma] || 0) + 1;[cite: 4]
+                else contManha[turma] = (contManha[turma] || 0) + 1;
             }
 
             if (aluno && aluno !== "TODA A TURMA") {
                 const chave = `${aluno} (${turma})`;
-                contAlunos[chave] = (contAlunos[chave] || 0) + 1;[cite: 4]
+                contAlunos[chave] = (contAlunos[chave] || 0) + 1;
                 if (!detalheTurmas[turma]) detalheTurmas[turma] = {};
-                detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;[cite: 4]
+                detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;
             }
 
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
-            contTipos[tipo] = (contTipos[tipo] || 0) + 1;[cite: 4]
-            if (tratativaRaw !== "") contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;[cite: 4]
+            contTipos[tipo] = (contTipos[tipo] || 0) + 1;
+            if (tratativaRaw !== "") contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
         }
 
-        // Renderizações
-        document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(Object.entries(contAlunos).filter(a => a[1] >= 10)), 20);[cite: 4]
-        document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");[cite: 4]
-        document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);[cite: 4]
-        document.getElementById('listaProfessoresMaisOcorrencias').innerHTML = renderListaProfessores(contProfessores, 20);[cite: 4]
-        document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");[cite: 4]
-        document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");[cite: 4]
+        // Renderizações na tela
+        document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(Object.entries(contAlunos).filter(a => a[1] >= 10)), 20);
+        document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
+        document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);
+        document.getElementById('listaProfessoresMaisOcorrencias').innerHTML = renderListaProfessores(contProfessores, 20);
+        document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
+        document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
 
-        window.detalheGlobal = detalheTurmas;[cite: 4]
+        window.detalheGlobal = detalheTurmas;
     } catch (e) { 
         console.error(e);
-        alert("Erro técnico: " + e.message); 
+        alert("Erro ao carregar Dashboard. Tente novamente."); 
     }
 }
-    function renderColunas(obj, titulo) {
+
+// Funções de desenho que devem existir no código
+function renderColunas(obj, titulo) {
     const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
     if (!entradas.length) return "";
     const max = Math.max(...Object.values(obj));
     let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
-    const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
-    
     entradas.forEach(([t, v]) => {
         const altura = (v / max) * 100;
-        h += `<div class="column-wrapper">
-                <div class="column-value">${v}</div>
-                <div class="column-bar" style="height:${altura}%" onclick="mostrarDetalhesTurma('${t}')"></div>
-                <div class="column-label">${t}</div>
-              </div>`;
+        h += `<div class="column-wrapper"><div class="column-value">${v}</div><div class="column-bar" style="height:${altura}%" onclick="mostrarDetalhesTurma('${t}')"></div><div class="column-label">${t}</div></div>`;
     });
     return h + `</div>`;
 }
@@ -1315,12 +1312,8 @@ function renderPizza(obj, titulo) {
         curr += p;
         return { label: lab, val: val, color: cores[idx % cores.length], slice: s };
     });
-    let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b>`;
-    h += `<div class="pie-chart" style="background: conic-gradient(${slices.map(s => s.slice).join(', ')})"></div>`;
-    h += `<ul class="pie-legend">`;
-    slices.forEach(s => {
-        h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`;
-    });
+    let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b><div class="pie-chart" style="background: conic-gradient(${slices.map(s => s.slice).join(', ')})"></div><ul class="pie-legend">`;
+    slices.forEach(s => { h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`; });
     return h + `</ul>`;
 }
 
