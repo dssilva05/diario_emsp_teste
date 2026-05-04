@@ -1223,7 +1223,7 @@ async function gravarOcorrencia() {
     }
 }
 
-    async function gerarAlertaCritico() {
+    -async function gerarAlertaCritico() {
     if (!navigator.onLine) return alert("⚠️ Você está offline. Conecte-se para atualizar o Dashboard.");
     
     const dashboard = document.getElementById('resDashboard');
@@ -1234,76 +1234,75 @@ async function gravarOcorrencia() {
         const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
         const data = await res.json();
 
+        // Inicialização de todos os contadores necessários
         let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
+        let contProfessores = {}; 
         let detalheTurmas = {};
-        // Lista exata das turmas do turno da tarde
+        
         const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
         const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
 
-        // 1. Processamento dos dados da Planilha (i=1 pula o cabeçalho)
+        // 1. Processamento dos dados (i=1 pula o cabeçalho da planilha)
         for (let i = 1; i < data.length; i++) {
             const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
             const tratativaRaw = (data[i][7] || "").split(" (")[0].trim();
 
-            // Contagem por Turno
+            // --- CONTAGEM POR PROFISSIONAL ---
+            let nomeProfLimpo = profField.split('] ')[1] || profField;
+            contProfessores[nomeProfLimpo] = (contProfessores[nomeProfLimpo] || 0) + 1;
+
+            // Contagem por Turno (Gráfico de Colunas)
             if (turma) {
                 if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
                 else contManha[turma] = (contManha[turma] || 0) + 1;
             }
 
-            // Contagem por Aluno (Ignora registros coletivos para o ranking individual)
+            // Contagem por Aluno (Ranking)
             if (aluno && aluno !== "TODA A TURMA") {
                 const chave = `${aluno} (${turma})`;
                 contAlunos[chave] = (contAlunos[chave] || 0) + 1;
-            }
 
-            if (turma && aluno && aluno !== "TODA A TURMA") {
+                // Prepara o "Detalhar Turma" (Modal)
                 if (!detalheTurmas[turma]) detalheTurmas[turma] = {};
                 detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;
             }
 
-            
-
-            // Extração do Tipo [Entre Colchetes]
+            // Extração do Tipo [Entre Colchetes] para a Pizza[cite: 4]
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
-            
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
             
+            // Contagem de Ações da Gestão[cite: 4]
             if (tratativaRaw !== "") {
                 contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
             }
         }
 
-        // --- FUNÇÕES DE RENDERIZAÇÃO INTERNAS ---
+        // --- DEFINIÇÃO DAS FUNÇÕES DE RENDERIZAÇÃO (Para os gráficos aparecerem) ---
 
-        // Gráfico de Colunas Azuis
         const renderColunas = (obj, titulo) => {
-    const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
-    if (!entradas.length) return "";
-    const max = Math.max(...Object.values(obj));
-    let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
-    
-    entradas.forEach(([t, v]) => {
-        const altura = (v / max) * 100;
-        // Adicionamos o onclick passando o nome da turma e os dados coletados
-        h += `<div class="column-wrapper">
-                <div class="column-value">${v}</div>
-                <div class="column-bar" style="height:${altura}%" onclick="mostrarDetalhesTurma('${t}')"></div>
-                <div class="column-label">${t}</div>
-              </div>`;
-    });
-    return h + `</div>`;
-};
+            const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
+            if (!entradas.length) return "";
+            const max = Math.max(...Object.values(obj));
+            let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
+            
+            entradas.forEach(([t, v]) => {
+                const altura = (v / max) * 100;
+                h += `<div class="column-wrapper">
+                        <div class="column-value">${v}</div>
+                        <div class="column-bar" style="height:${altura}%" onclick="mostrarDetalhesTurma('${t}')"></div>
+                        <div class="column-label">${t}</div>
+                      </div>`;
+            });
+            return h + `</div>`;
+        };
 
-        // Gráfico de Pizza com Legenda Zebra
         const renderPizza = (obj, titulo) => {
             const dados = Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, 6);
             const total = Object.values(obj).reduce((a, b) => a + b, 0);
             if (total === 0) return "";
-            
             let curr = 0;
             const slices = dados.map(([lab, val], idx) => {
                 const p = (val / total) * 100;
@@ -1311,7 +1310,6 @@ async function gravarOcorrencia() {
                 curr += p;
                 return { label: lab, val: val, color: cores[idx % cores.length], slice: s };
             });
-
             let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b>`;
             h += `<div class="pie-chart" style="background: conic-gradient(${slices.map(s => s.slice).join(', ')})"></div>`;
             h += `<ul class="pie-legend">`;
@@ -1321,37 +1319,26 @@ async function gravarOcorrencia() {
             return h + `</ul>`;
         };
 
-        // Lista de Alunos (Tabela Zebra)
-        const renderListaAlunos = (obj, limite) => {
-            const ordenados = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, limite);
-            if (!ordenados.length) return "<p style='text-align:center; color:gray;'>Nenhum dado.</p>";
-
-            let html = '<table style="width:100%; border-collapse:collapse; font-size:12px; background:white; border-radius:8px; overflow:hidden;">';
-            ordenados.forEach(([nome, total]) => {
-                html += `<tr style="border-bottom: 1px solid #eee">
-                            <td style="padding:10px; text-transform: uppercase;">${nome}</td>
-                            <td style="padding:10px; color:red; text-align:right;"><b>${total} reg.</b></td>
-                         </tr>`;
-            });
-            return html + '</table>';
-        };
-
-        // --- APLICAÇÃO DOS DADOS NOS CONTAINERS ---
+        // --- IMPRESSÃO DOS RESULTADOS NA TELA ---[cite: 4]
 
         // 1. Alunos Críticos (+10)
         const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10);
         document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(criticos), 20);
 
-        // 2. Ocorrências por Turma (Barras)
+        // 2. Gráfico de Turmas (Barras)
         document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
 
-        // 3. Ranking de Alunos (Lista)
+        // 3. Ranking de Alunos (Cliquáveis)
         document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);
 
-        // 4. Pizzas (Geral)
+        // 4. NOVO: Ranking de Profissionais (Top 20)
+        document.getElementById('listaProfessoresMaisOcorrencias').innerHTML = renderListaProfessores(contProfessores, 20);
+
+        // 5. Gráficos de Pizza
         document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
         document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
 
+        // Guarda os dados para o modal de detalhes
         window.detalheGlobal = detalheTurmas;
         
     } catch (e) { 
