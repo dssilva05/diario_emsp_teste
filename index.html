@@ -1234,116 +1234,52 @@ async function gravarOcorrencia() {
         const res = await fetch(`${SCRIPT_URL}?acao=getDados`);
         const data = await res.json();
 
-        // Inicialização de todos os contadores necessários
         let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
-        let contProfessores = {}; 
+        let contProfessores = {}; // Nova contagem
         let detalheTurmas = {};
-        
         const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
         const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
 
-        // 1. Processamento dos dados (i=1 pula o cabeçalho da planilha)
         for (let i = 1; i < data.length; i++) {
             const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
             const tratativaRaw = (data[i][7] || "").split(" (")[0].trim();
 
-            // --- CONTAGEM POR PROFISSIONAL ---
+            // Contagem de Professores
             let nomeProfLimpo = profField.split('] ')[1] || profField;
             contProfessores[nomeProfLimpo] = (contProfessores[nomeProfLimpo] || 0) + 1;
 
-            // Contagem por Turno (Gráfico de Colunas)
             if (turma) {
                 if (turmasTarde.includes(turma)) contTarde[turma] = (contTarde[turma] || 0) + 1;
                 else contManha[turma] = (contManha[turma] || 0) + 1;
             }
 
-            // Contagem por Aluno (Ranking)
             if (aluno && aluno !== "TODA A TURMA") {
                 const chave = `${aluno} (${turma})`;
                 contAlunos[chave] = (contAlunos[chave] || 0) + 1;
-
-                // Prepara o "Detalhar Turma" (Modal)
                 if (!detalheTurmas[turma]) detalheTurmas[turma] = {};
                 detalheTurmas[turma][aluno] = (detalheTurmas[turma][aluno] || 0) + 1;
             }
 
-            // Extração do Tipo [Entre Colchetes] para a Pizza[cite: 4]
             const tipoMatch = profField.match(/\[(.*?)\]/);
             const tipo = tipoMatch ? tipoMatch[1] : "OUTRO";
             contTipos[tipo] = (contTipos[tipo] || 0) + 1;
-            
-            // Contagem de Ações da Gestão[cite: 4]
-            if (tratativaRaw !== "") {
-                contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
-            }
+            if (tratativaRaw !== "") contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
         }
 
-        // --- DEFINIÇÃO DAS FUNÇÕES DE RENDERIZAÇÃO (Para os gráficos aparecerem) ---
-
-        const renderColunas = (obj, titulo) => {
-            const entradas = Object.entries(obj).sort((a,b) => b[1] - a[1]);
-            if (!entradas.length) return "";
-            const max = Math.max(...Object.values(obj));
-            let h = `<b style="font-size:13px; color:var(--blue); margin-left:10px;">Turno: ${titulo}</b><div class="column-chart-container">`;
-            
-            entradas.forEach(([t, v]) => {
-                const altura = (v / max) * 100;
-                h += `<div class="column-wrapper">
-                        <div class="column-value">${v}</div>
-                        <div class="column-bar" style="height:${altura}%" onclick="mostrarDetalhesTurma('${t}')"></div>
-                        <div class="column-label">${t}</div>
-                      </div>`;
-            });
-            return h + `</div>`;
-        };
-
-        const renderPizza = (obj, titulo) => {
-            const dados = Object.entries(obj).sort((a,b) => b[1] - a[1]).slice(0, 6);
-            const total = Object.values(obj).reduce((a, b) => a + b, 0);
-            if (total === 0) return "";
-            let curr = 0;
-            const slices = dados.map(([lab, val], idx) => {
-                const p = (val / total) * 100;
-                const s = `${cores[idx % cores.length]} ${curr.toFixed(2)}% ${(curr + p).toFixed(2)}%`;
-                curr += p;
-                return { label: lab, val: val, color: cores[idx % cores.length], slice: s };
-            });
-            let h = `<b style="font-size:13px; color:var(--blue);">${titulo}</b>`;
-            h += `<div class="pie-chart" style="background: conic-gradient(${slices.map(s => s.slice).join(', ')})"></div>`;
-            h += `<ul class="pie-legend">`;
-            slices.forEach(s => {
-                h += `<li><div><span class="dot" style="background:${s.color}"></span>${s.label}</div> <b>${s.val}</b></li>`;
-            });
-            return h + `</ul>`;
-        };
-
-        // --- IMPRESSÃO DOS RESULTADOS NA TELA ---[cite: 4]
-
-        // 1. Alunos Críticos (+10)
-        const criticos = Object.entries(contAlunos).filter(a => a[1] >= 10);
-        document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(criticos), 20);
-
-        // 2. Gráfico de Turmas (Barras)
+        // Renderizações usando as novas funções auxiliares
+        document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(Object.entries(contAlunos).filter(a => a[1] >= 10)), 20);
         document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
-
-        // 3. Ranking de Alunos (Cliquáveis)
         document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);
-
-        // 4. NOVO: Ranking de Profissionais (Top 20)
         document.getElementById('listaProfessoresMaisOcorrencias').innerHTML = renderListaProfessores(contProfessores, 20);
-
-        // 5. Gráficos de Pizza
         document.getElementById('graficoPizzaTipos').innerHTML = renderPizza(contTipos, "Tipos de Registro");
         document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
 
-        // Guarda os dados para o modal de detalhes
         window.detalheGlobal = detalheTurmas;
-        
     } catch (e) { 
-        console.error("Erro Dashboard:", e);
-        alert("Erro ao processar os dados do Dashboard."); 
+        console.error(e);
+        alert("Erro ao processar dados do Dashboard."); 
     }
 }
 
@@ -1665,6 +1601,50 @@ function filtrarFeedbacks() {
     });
     // Adiciona o cabeçalho fake para manter a estrutura da função de renderizar
     renderizarFeedbacks([[], ...filtrados]);
+}
+
+    // Renderiza lista de profissionais (Top 20)
+const renderListaProfessores = (obj, limite) => {
+    const ordenados = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, limite);
+    if (!ordenados.length) return "<p style='text-align:center; color:gray;'>Nenhum dado.</p>";
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:12px; background:white; border-radius:8px; overflow:hidden; border: 1px solid #ddd;">';
+    html += '<tr style="background:#f8f9fa; border-bottom:2px solid var(--gold);"><th style="padding:10px; text-align:left;">Profissional</th><th style="padding:10px; text-align:right;">Total</th></tr>';
+    ordenados.forEach(([nome, total]) => {
+        html += `<tr style="border-bottom: 1px solid #eee"><td style="padding:10px; font-weight:bold;">${nome}</td><td style="padding:10px; text-align:right;"><b>${total} reg.</b></td></tr>`;
+    });
+    return html + '</table>';
+};
+
+// Renderiza lista de alunos com link clicável
+const renderListaAlunos = (obj, limite) => {
+    const ordenados = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, limite);
+    if (!ordenados.length) return "<p style='text-align:center; color:gray;'>Nenhum dado.</p>";
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:12px; background:white; border-radius:8px; overflow:hidden;">';
+    ordenados.forEach(([chave, total]) => {
+        const match = chave.match(/(.*) \((.*)\)/);
+        const nome = match ? match[1] : chave;
+        const turma = match ? match[2] : "";
+        html += `<tr style="border-bottom: 1px solid #eee">
+            <td style="padding:10px; text-transform: uppercase; color: var(--blue); cursor:pointer; text-decoration:underline;" onclick="irParaConsultaDireta('${nome}', '${turma}')">${chave}</td>
+            <td style="padding:10px; color:red; text-align:right;"><b>${total} reg.</b></td>
+        </tr>`;
+    });
+    return html + '</table>';
+};
+
+// Função que faz a mágica de filtrar o aluno automaticamente na Aba 2
+function irParaConsultaDireta(nome, turma) {
+    tab(2);
+    const selT = document.getElementById('selTurmaCons');
+    selT.value = turma;
+    atualizarAlunos('selTurmaCons', 'selAlunoCons');
+    setTimeout(() => {
+        const selA = document.getElementById('selAlunoCons');
+        selA.value = nome;
+        document.getElementById('chkTodosRegistros').checked = true;
+        document.getElementById('chkMeusRegistros').checked = false;
+        consultarHistorico();
+    }, 300);
 }
     
 </script>
