@@ -1062,10 +1062,22 @@ async function gravarOcorrencia() {
             let textoExibicao = textoTratativaBruto;
             let avisoDataReuniao = "";
 
+            // Lógica para extrair Data e Horário salvos na string da Tratativa
             if (textoTratativaBruto.includes("(Data:")) {
                 const matchData = textoTratativaBruto.match(/\d{2}\/\d{2}\/\d{4}/);
+                // Procura por um padrão de horário como "14:30" ou "08:00"
+                const matchHora = textoTratativaBruto.match(/\d{2}:\d{2}/);
+                
                 if (matchData) {
-                    avisoDataReuniao = `<p style="color:#e65100; font-weight:bold; margin-top:5px; margin-bottom:0;">📅 Reunião: ${matchData[0]}</p>`;
+                    let detalheAgenda = `📅 Data: ${matchData[0]}`;
+                    if (matchHora) {
+                        detalheAgenda += ` | ⏰ Horário: ${matchHora[0]}`;
+                    }
+                    
+                    // Cria uma etiqueta em destaque vermelho/laranja para a reunião agendada
+                    avisoDataReuniao = `<div style="background:#fff3cd; color:#d32f2f; border:1px solid #ffeeba; padding:8px; border-radius:6px; font-weight:bold; margin-top:8px; display:inline-block; font-size:12px;">⚠️ REUNIÃO AGENDADA -> ${detalheAgenda}</div>`;
+                    
+                    // Limpa o texto bruto para exibição na linha comum da ação da gestão
                     textoExibicao = textoTratativaBruto.replace(/\s\(Data:.*?\)/g, "");
                 }
             }
@@ -1130,8 +1142,18 @@ async function gravarOcorrencia() {
         
         if (tratativa.includes("(Data:")) {
             const extrair = tratativa.match(/\d{2}\/\d{2}\/\d{4}/);
+            const extrairHora = tratativa.match(/\d{2}:\d{2}/); // Captura o padrão de hora (HH:MM)
+            
             if (extrair) {
                 dataParaInput = extrair[0].split('/').reverse().join('-');
+            }
+            
+            // Se achar o horário na string, preenche o input correspondente com um pequeno atraso para o HTML carregar
+            if (extrairHora) {
+                setTimeout(() => {
+                    const campoHora = document.getElementById('horarioConvocacao');
+                    if (campoHora) campoHora.value = extrairHora[0];
+                }, 60);
             }
         }
 
