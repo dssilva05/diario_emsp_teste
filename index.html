@@ -1142,34 +1142,8 @@ async function gravarOcorrencia() {
         
         if (tratativa.includes("(Data:")) {
             const extrair = tratativa.match(/\d{2}\/\d{2}\/\d{4}/);
-            // Nova expressão para extrair o padrão de horário (ex: 14:30)
-            const extrairHora = tratativa.match(/\d{2}:\d{2}/);
-            
             if (extrair) {
                 dataParaInput = extrair[0].split('/').reverse().join('-');
-            }
-
-            // Se encontrar o horário na string, preenche o campo horarioConvocacao de forma limpa
-            if (extrairHora) {
-                setTimeout(() => {
-                    const campoHora = document.getElementById('horarioConvocacao');
-                    if (campoHora) {
-                        campoHora.value = extrairHora[0];
-                    }
-                }, 50);
-            }
-        } else {
-            // Se não houver reunião agendada na tratativa antiga, garante que o campo comece limpo
-            const campoHora = document.getElementById('horarioConvocacao');
-            if (campoHora) campoHora.value = "";
-        }
-            
-            // Se achar o horário na string, preenche o input correspondente com um pequeno atraso para o HTML carregar
-            if (extrairHora) {
-                setTimeout(() => {
-                    const campoHora = document.getElementById('horarioConvocacao');
-                    if (campoHora) campoHora.value = extrairHora[0];
-                }, 60);
             }
         }
 
@@ -1187,8 +1161,16 @@ async function gravarOcorrencia() {
                 </select>
 
                 <div id="divDataConvocacao" style="display:none; margin-top:10px;">
-                    <label>📅 Data da Reunião:</label>
-                    <input type="date" id="dataConvocacao" style="width:100%;">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label>📅 Data da Reunião:</label>
+                            <input type="date" id="dataConvocacao" style="width:100%;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label>⏰ Horário:</label>
+                            <input type="time" id="horarioConvocacao" style="width:100%; margin-top: 8px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 15px;">
+                        </div>
+                    </div>
                 </div>
 
                 <label style="display:block; margin-top:15px;">🔒 Relato Interno (Privado):</label>
@@ -1205,6 +1187,11 @@ async function gravarOcorrencia() {
             if (opcaoLimpa === "Família Convocada") {
                 document.getElementById('divDataConvocacao').style.display = 'block';
                 document.getElementById('dataConvocacao').value = dataParaInput;
+                
+                const extrairHora = tratativa.match(/\d{2}:\d{2}/);
+                if (extrairHora) {
+                    document.getElementById('horarioConvocacao').value = extrairHora[0];
+                }
             }
             document.getElementById('selTratativa').focus();
         }, 50);
