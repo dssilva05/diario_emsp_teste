@@ -653,9 +653,18 @@
                     <option value="Encaminhamento PAS">Encaminhamento PAS</option>
                 </select>
                 <div id="divDataConvocacao" style="display:none; margin-top:10px;">
-                    <label>📅 Data da Reunião:</label>
-                    <input type="date" id="dataConvocacao" style="width:100%;">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label>📅 Data da Reunião:</label>
+                            <input type="date" id="dataConvocacao" style="width:100%;">
+                        </div>
+                    <div style="flex: 1;">
+                        <label>⏰ Horário:</label>
+                            <input type="time" id="horarioConvocacao" style="width:100%; margin-top: 8px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 15px;">
+                        </div>
+                    </div>
                 </div>
+                
                 <label style="display:block; margin-top:15px;">🔒 Relato Interno (Privado):</label>
                 <textarea id="relatoGestaoTexto" rows="3" style="width:100%;" placeholder="Anotações da gestão..."></textarea>
             </div>`;
@@ -805,7 +814,9 @@ async function gravarOcorrencia() {
             tratativaFinal = selT.value;
             if (tratativaFinal === "Família Convocada" && dtC && dtC.value) {
                 const dataFormatada = dtC.value.split('-').reverse().join('/');
-                tratativaFinal += ` (Data: ${dataFormatada})`;
+                const horaVal = document.getElementById('horarioConvocacao').value;
+                const horaFormatada = horaVal ? ` às ${horaVal}` : '';
+            tratativaFinal += ` (Data: ${dataFormatada}${horaFormatada})`;
             }
         } else {
             tratativaFinal = window.tratativaAntiga || "";
@@ -1373,6 +1384,7 @@ function renderPizza(obj, titulo) {
         if(document.getElementById('relatoGestaoTexto')) document.getElementById('relatoGestaoTexto').value = "";
         if(document.getElementById('divDataConvocacao')) document.getElementById('divDataConvocacao').style.display = "none";
         if(document.getElementById('dataConvocacao')) document.getElementById('dataConvocacao').value = "";
+        if(document.getElementById('horarioConvocacao')) document.getElementById('horarioConvocacao').value = "";
     } else {
         // Se for professor comum, remove o bloco completamente
         cont.innerHTML = "";
