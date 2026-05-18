@@ -649,6 +649,7 @@
                     <option value="Advertência Verbal">Advertência Verbal</option>
                     <option value="Advertência por Escrito">Advertência por Escrito</option>
                     <option value="Família Convocada">Família Convocada</option>
+                    <option value="Atendimento à família">Atendimento à família</option>
                     <option value="Encaminhamento PAS">Encaminhamento PAS</option>
                 </select>
                 <div id="divDataConvocacao" style="display:none; margin-top:10px;">
@@ -755,13 +756,18 @@ async function carregarDatalistProfessores() {
 }
 
     function atualizarAlunos(idT, idA) {
-        const t = document.getElementById(idT).value, s = document.getElementById(idA);
-        s.innerHTML = '<option value="">-- Selecione --</option>';
-        if(ALUNOS[t]) {
-            s.add(new Option("👥 TODA A TURMA", "TODA A TURMA"));
-            ALUNOS[t].forEach(al => s.add(new Option(al, al)));
-        }
+    const t = document.getElementById(idT).value, s = document.getElementById(idA);
+    s.innerHTML = '<option value="">-- Selecione --</option>';
+    
+    if(ALUNOS[t]) {
+        s.add(new Option("👥 TODA A TURMA", "TODA A TURMA"));
+        
+        // Criamos uma cópia da lista e aplicamos a ordem alfabética antes de exibir
+        const alunosOrdenados = [...ALUNOS[t]].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        
+        alunosOrdenados.forEach(al => s.add(new Option(al, al)));
     }
+}
 
 async function gravarOcorrencia() {
     const tVal = document.getElementById('selTurma').value;
@@ -1422,14 +1428,21 @@ function renderPizza(obj, titulo) {
 }
 
     function carregarListaTransferencia() {
-        const selTransferir = document.getElementById('selectAlunoTransferir');
-        selTransferir.innerHTML = '<option value="">Selecione o aluno...</option>';
-        Object.keys(ALUNOS).sort().forEach(turma => {
-            ALUNOS[turma].forEach(aluno => {
-                selTransferir.add(new Option(`${aluno} (${turma})`, `${aluno}|${turma}`));
-            });
+    const selTransferir = document.getElementById('selectAlunoTransferir');
+    selTransferir.innerHTML = '<option value="">Selecione o aluno...</option>';
+    
+    // Organiza as turmas primeiro
+    const turmas = Object.keys(ALUNOS).sort();
+    
+    turmas.forEach(turma => {
+        // Organiza os alunos daquela turma antes de adicionar no seletor
+        const alunosDaTurma = [...ALUNOS[turma]].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        
+        alunosDaTurma.forEach(aluno => {
+            selTransferir.add(new Option(`${aluno} (${turma})`, `${aluno}|${turma}`));
         });
-    }
+    });
+}
 
     async function salvarNovoAluno() {
         const nome = document.getElementById('novoAlunoNome').value.trim().toUpperCase();
@@ -1506,23 +1519,26 @@ function renderPizza(obj, titulo) {
 function prepararEdicaoFeedback(id, professor, data, relato) {
     idFeedbackEditando = id;
     
-    // Preenche os campos do formulário no topo da aba 5
+    // Preenche os campos do formulário no topo
     document.getElementById('feedbackProfNome').value = professor;
     
-    // Converte data dd/mm/aaaa para yyyy-mm-dd para o input date
+    // Converte data dd/mm/aaaa para yyyy-mm-dd
     const partes = data.split('/');
     if(partes.length === 3) {
         document.getElementById('feedbackData').value = `${partes[2]}-${partes[1]}-${partes[0]}`;
     }
     
+    // Coloca o texto no campo de mensagem
     document.getElementById('feedbackTexto').value = relato;
     
-    // Altera o botão para modo de edição
+    // Muda visualmente o botão de salvar
     const btn = document.querySelector("#aba5 .btn-main");
-    btn.innerText = "💾 Salvar Alterações";
-    btn.style.background = "#ef6c00";
+    if (btn) {
+        btn.innerText = "💾 Salvar Alterações";
+        btn.style.background = "#ef6c00";
+    }
     
-    // Rola para o topo do formulário
+    // Rola a tela para cima para você ver o formulário preenchido
     document.getElementById('aba5').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -1602,7 +1618,6 @@ function renderizarFeedbacks(dados) {
     }
 
     let html = "";
-    // i=0 é o cabeçalho, os dados começam em i=1
     for (let i = 1; i < dados.length; i++) {
         const id = dados[i][0];
         const profAlvo = dados[i][1];
@@ -1610,11 +1625,14 @@ function renderizarFeedbacks(dados) {
         const dataStr = dados[i][3];
         const relato = dados[i][4];
 
+        // Usamos uma técnica mais segura para passar o texto do relato para o botão
+        const relatoSeguro = encodeURIComponent(relato);
+
         html += `
         <div class="item-ocorrencia" style="border-left: 5px solid #1976d2; position: relative; margin-bottom:15px;">
             <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 5px;">
-                <button onclick="prepararEdicaoFeedback('${id}', '${profAlvo}', '${dataStr}', \`${relato}\`)" 
-                        style="background:orange; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">
+                <button onclick="prepararEdicaoFeedback('${id}', '${profAlvo}', '${dataStr}', \`${relato}\` )" 
+                    style="background:orange; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">
                     Editar
                 </button>
                 <button onclick="excluirFeedback('${id}')" 
@@ -1688,40 +1706,3 @@ function irParaConsultaDireta(nome, turma) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
