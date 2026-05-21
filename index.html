@@ -783,17 +783,26 @@ function abrirAba(num) {
     document.getElementById('aba' + num).classList.remove('hidden');
 }
 
-    function atualizarAlunos(idT, idA) {
+function atualizarAlunos(idT, idA) {
     const t = document.getElementById(idT).value, s = document.getElementById(idA);
     s.innerHTML = '<option value="">-- Selecione --</option>';
     
     if(ALUNOS[t]) {
         s.add(new Option("👥 TODA A TURMA", "TODA A TURMA"));
         
-        // Criamos uma cópia da lista e aplicamos a ordem alfabética antes de exibir
-        const alunosOrdenados = [...ALUNOS[t]].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        // Criamos uma cópia da lista organizada por ordem alfabética usando a propriedade .nome
+        const alunosOrdenados = [...ALUNOS[t]].sort((a, b) => {
+            const nomeA = typeof a === 'object' ? a.nome : a;
+            const nomeB = typeof b === 'object' ? b.nome : b;
+            return nomeA.localeCompare(nomeB, 'pt-BR');
+        });
         
-        alunosOrdenados.forEach(al => s.add(new Option(al, al)));
+        alunosOrdenados.forEach(al => {
+            // Se o aluno for um objeto (formato novo com foto), pega o al.nome
+            // Se for texto puro (formato antigo do cache), usa o próprio al
+            const nomeExibicao = typeof al === 'object' ? al.nome : al;
+            s.add(new Option(nomeExibicao, nomeExibicao));
+        });
     }
 }
 
