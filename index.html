@@ -1065,22 +1065,27 @@ function exibirDados(data, t, a, p) {
         
         // --- BUSCA DINÂMICA DO ID DA FOTO NO DRIVE ---
         // O código vai varrer o objeto local ALUNOS procurando o ID salvo ao lado do nome do estudante
+        // --- BUSCA DINÂMICA DO ID DA FOTO NO DRIVE (CORRIGIDO) ---
         let idFotoDrive = "";
         
-        // Se a sua planilha retorna os alunos como objetos contendo ID da foto ou arrays, o find localiza:
+        // Procura o aluno na lista global ALUNOS daquela turma específica
         if (ALUNOS && ALUNOS[t]) {
-            // Procura o aluno na lista daquela turma específica
-            const cadastroAluno = ALUNOS[t].find(nomeAl => String(nomeAl).toUpperCase() === nome.toUpperCase());
-            // Nota: Caso sua lista local "ALUNOS" passe a trazer objetos com o ID da foto vindo do servidor,
-            // capturamos aqui. Por ora, se você já recebe a foto do Apps Script, ela será mapeada nesta variável.
-            if (cadastroAluno && cadastroAluno.fotoId) idFotoDrive = cadastroAluno.fotoId;
+            const cadastroAluno = ALUNOS[t].find(al => {
+                const nomeCadastrado = typeof al === 'object' ? al.nome : al;
+                return String(nomeCadastrado).toUpperCase() === nome.toUpperCase();
+            });
+            
+            // Se achou o objeto do aluno, captura o fotoId que salvamos do servidor
+            if (cadastroAluno && cadastroAluno.fotoId) {
+                idFotoDrive = cadastroAluno.fotoId;
+            }
         }
 
-        // Se houver um ID salvo na planilha, gera a URL do Drive. Caso contrário, gera um avatar neutro padrão
+        // URL corrigida para renderização direta em tags <img> sem bloqueio do Drive
         const urlFoto = idFotoDrive 
-            ? `https://docs.google.com/uc?export=view&id=${idFotoDrive}` 
+            ? `https://lh3.googleusercontent.com/d/${idFotoDrive}`
             : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nome)}&backgroundType=solid,gradientLinear`;
-
+        
         // MODIFICADO: O cabeçalho azul do aluno agora tem suporte flexbox para acomodar a foto redonda
         html += `
         <div style="background: var(--blue); color: white; padding: 12px 15px; margin-top: 20px; border-radius: 8px 8px 0 0; font-weight: bold; border-bottom: 3px solid var(--gold); display: flex; align-items: center; justify-content: space-between;">
