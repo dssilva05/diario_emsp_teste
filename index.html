@@ -361,6 +361,25 @@
                 <button class="btn-main" onclick="salvarNovoAluno()">Cadastrar Aluno</button>
             </div>
 
+            <div class="card" style="border-left: 5px solid var(--blue); margin-top: 20px;">
+    <h3 style="color:var(--blue); margin-top:0;">📸 Tirar Foto do Aluno</h3>
+    
+    <label>1. Selecione a Turma:</label>
+    <select id="fotoAlunoTurma" onchange="atualizarAlunos('fotoAlunoTurma', 'fotoAlunoNome')">
+        <option value="">Selecione a turma...</option>
+    </select>
+
+    <label>2. Selecione o Aluno:</label>
+    <select id="fotoAlunoNome">
+        <option value="">Selecione a turma primeiro...</option>
+    </select>
+
+    <label>3. Tirar/Selecionar Foto:</label>
+    <input type="file" id="arquivoFoto" accept="image/*" capture="camera" style="margin-top: 10px;">
+    
+    <button class="btn-main" style="margin-top:15px; background: #2e7d32;" onclick="uploadFoto()">Salvar Foto no Drive</button>
+</div>
+
             <div class="card" style="border-left: 5px solid orange;">
     <h3 style="color:orange; margin-top:0;">🔄 Transferir Aluno</h3>
     
@@ -987,13 +1006,11 @@ async function gravarOcorrencia() {
     }
 }
 
-    function exibirDados(data, t, a, p) {
+function exibirDados(data, t, a, p) {
     window.ultimoResultadoConsulta = data; // Salva para permitir edição de textos longos
     const rDiv = document.getElementById('resConsulta');
     const verTodos = document.getElementById('chkTodosRegistros').checked;
 
-        
-    
     // 1. Filtragem Inicial
     let filtrados = data.filter(r => {
         const turmaBate = r[3] && String(r[3]).trim() === t;
@@ -1037,12 +1054,36 @@ async function gravarOcorrencia() {
     nomesOrdenados.forEach(nome => {
         const qtd = agrupadoPorAluno[nome].length;
         
+        // --- BUSCA DINÂMICA DO ID DA FOTO NO DRIVE ---
+        // O código vai varrer o objeto local ALUNOS procurando o ID salvo ao lado do nome do estudante
+        let idFotoDrive = "";
+        
+        // Se a sua planilha retorna os alunos como objetos contendo ID da foto ou arrays, o find localiza:
+        if (ALUNOS && ALUNOS[t]) {
+            // Procura o aluno na lista daquela turma específica
+            const cadastroAluno = ALUNOS[t].find(nomeAl => String(nomeAl).toUpperCase() === nome.toUpperCase());
+            // Nota: Caso sua lista local "ALUNOS" passe a trazer objetos com o ID da foto vindo do servidor,
+            // capturamos aqui. Por ora, se você já recebe a foto do Apps Script, ela será mapeada nesta variável.
+            if (cadastroAluno && cadastroAluno.fotoId) idFotoDrive = cadastroAluno.fotoId;
+        }
+
+        // Se houver um ID salvo na planilha, gera a URL do Drive. Caso contrário, gera um avatar neutro padrão
+        const urlFoto = idFotoDrive 
+            ? `https://docs.google.com/uc?export=view&id=${idFotoDrive}` 
+            : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nome)}&backgroundType=solid,gradientLinear`;
+
+        // MODIFICADO: O cabeçalho azul do aluno agora tem suporte flexbox para acomodar a foto redonda
         html += `
-        <div style="background: var(--blue); color: white; padding: 10px; margin-top: 20px; border-radius: 8px 8px 0 0; font-weight: bold; border-bottom: 3px solid var(--gold); display: flex; justify-content: space-between; align-items: center;">
-            <span>👤 ALUNO(A): ${nome}</span>
-            <span style="background: var(--gold); color: black; padding: 2px 10px; border-radius: 12px; font-size: 12px;">${qtd} ${qtd > 1 ? 'registros' : 'registro'}</span>
+        <div style="background: var(--blue); color: white; padding: 12px 15px; margin-top: 20px; border-radius: 8px 8px 0 0; font-weight: bold; border-bottom: 3px solid var(--gold); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <img src="${urlFoto}" 
+                     onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=avatar'"
+                     style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: white; border: 2px solid var(--gold); box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+                <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.3px;">👤 ${nome}</span>
+            </div>
+            <span style="background: var(--gold); color: black; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${qtd} ${qtd > 1 ? 'registros' : 'registro'}</span>
         </div>
-        <div style="background: rgba(255,255,255,0.5); padding: 10px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; margin-bottom: 10px;">
+        <div style="background: rgba(255,255,255,0.5); padding: 15px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; margin-bottom: 10px;">
         `;
 
         const ocorrenciasAluno = agrupadoPorAluno[nome].sort((m, n) => {
@@ -1065,7 +1106,6 @@ async function gravarOcorrencia() {
             // Lógica para extrair Data e Horário salvos na string da Tratativa
             if (textoTratativaBruto.includes("(Data:")) {
                 const matchData = textoTratativaBruto.match(/\d{2}\/\d{2}\/\d{4}/);
-                // Procura por um padrão de horário como "14:30" ou "08:00"
                 const matchHora = textoTratativaBruto.match(/\d{2}:\d{2}/);
                 
                 if (matchData) {
@@ -1074,10 +1114,7 @@ async function gravarOcorrencia() {
                         detalheAgenda += ` | ⏰ Horário: ${matchHora[0]}`;
                     }
                     
-                    // Cria uma etiqueta em destaque vermelho/laranja para a reunião agendada
                     avisoDataReuniao = `<div style="background:#fff3cd; color:#d32f2f; border:1px solid #ffeeba; padding:8px; border-radius:6px; font-weight:bold; margin-top:8px; display:inline-block; font-size:12px;">⚠️ REUNIÃO AGENDADA -> ${detalheAgenda}</div>`;
-                    
-                    // Limpa o texto bruto para exibição na linha comum da ação da gestão
                     textoExibicao = textoTratativaBruto.replace(/\s\(Data:.*?\)/g, "");
                 }
             }
@@ -1110,6 +1147,10 @@ async function gravarOcorrencia() {
 
     rDiv.innerHTML = html;
     document.getElementById('btnImp').style.display = "block";
+}
+
+    function prepararEdicaoCompleta(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
+    carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa);
 }
 
     function carregarParaEdicao(id, data, turma, aluno, texto, tratativa, relatoGestao, focarTratativa) {
@@ -1737,6 +1778,112 @@ function irParaConsultaDireta(nome, turma) {
         document.getElementById('chkMeusRegistros').checked = false;
         consultarHistorico();
     }, 300);
+}
+
+    async function uploadFoto() {
+    const turma = document.getElementById('fotoAlunoTurma').value;
+    const aluno = document.getElementById('fotoAlunoNome').value;
+    const arquivoInput = document.getElementById('arquivoFoto');
+
+    // Validações básicas
+    if (!turma || !aluno || aluno === "TODA A TURMA") {
+        return alert("⚠️ Por favor, selecione a turma e o aluno específico.");
+    }
+    if (!arquivoInput.files || arquivoInput.files.length === 0) {
+        return alert("⚠️ Por favor, tire ou selecione uma foto primeiro.");
+    }
+
+    const btn = event.target;
+    btn.innerText = "⏳ Enviando...";
+    btn.disabled = true;
+
+    const arquivo = arquivoInput.files[0];
+    const fr = new FileReader();
+
+    // Este evento roda quando o navegador termina de ler o arquivo de imagem
+    fr.onload = async function(e) {
+        // Converte a imagem em uma string Base64 (texto) para enviar
+        const rawLog = e.target.result.split(',')[1];
+        
+        // Prepara os dados para enviar para o SCRIPT_URL
+        const p = new URLSearchParams();
+        p.append('acao', 'uploadFotoAluno');
+        p.append('nomeAluno', aluno);
+        p.append('turmaAluno', turma);
+        p.append('imagemBase64', rawLog);
+        p.append('tipoMime', arquivo.type); // ex: image/jpeg
+
+        try {
+            // Envia os dados para o seu SCRIPT_URL (Google Apps Script)
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: p });
+            
+            alert("✅ Foto salva com sucesso no Drive!");
+            // Limpa o campo de arquivo para a próxima foto
+            arquivoInput.value = ""; 
+        } catch (e) {
+            console.error(e);
+            alert("❌ Erro ao enviar a foto para o Drive.");
+        } finally {
+            btn.innerText = "Salvar Foto no Drive";
+            btn.disabled = false;
+        }
+    };
+
+    // Inicia a leitura do arquivo como uma URL de dados (necessário para o Base64)
+    fr.readAsDataURL(arquivo);
+}
+    
+    function salvarFotoNoDrive(e) {
+  try {
+    var nomeAluno = e.parameter.nomeAluno;
+    var turmaAluno = e.parameter.turmaAluno;
+    var imagemBase64 = e.parameter.imagemBase64;
+    var tipoMime = e.parameter.tipoMime; // ex: image/jpeg
+    
+    // 1. CONVERTE O TEXTO BASE64 DE VOLTA PARA UM ARQUIVO DE IMAGEM
+    var bytes = Utilities.base64Decode(imagemBase64);
+    var blob = Utilities.newBlob(bytes, tipoMime, nomeAluno + " - " + turmaAluno + ".jpg");
+    
+    // 2. ABRE A PASTA DO DRIVE (Cole o ID da sua pasta criada na linha abaixo)
+    var ID_PASTA_FOTOS = "1q4NgSxTU2XYKy3yqdy77kSLDJLpQSPPg"; 
+    var pasta = DriveApp.getFolderById(ID_PASTA_FOTOS);
+    
+    // Se o aluno já tiver uma foto antiga com o mesmo nome nessa pasta, nós a deletamos para não acumular lixo
+    var arquivosAntigos = pasta.getFilesByName(nomeAluno + " - " + turmaAluno + ".jpg");
+    while (arquivosAntigos.hasNext()) {
+      arquivosAntigos.next().setTrashed(true);
+    }
+    
+    // Salva a nova foto na pasta
+    var arquivoCriado = pasta.createFile(blob);
+    var idFoto = arquivoCriado.getId(); // Esse ID é o que usaremos para exibir a imagem
+    
+    // 3. SALVA O ID DA FOTO NA SUA PLANILHA DE ALUNOS
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    // ATENÇÃO: Ajuste o nome da aba se na sua planilha for diferente de "Alunos"
+    var abaAlunos = ss.getSheetByName("Estudantes"); 
+    var dados = abaAlunos.getDataRange().getValues();
+    
+    // Vamos procurar a linha correta combinando a Turma (Coluna A) e o Aluno (Coluna B)
+    // E vamos salvar o ID da foto na Coluna C (3ª coluna)
+    for (var i = 1; i < dados.length; i++) {
+      var turmaPlanilha = dados[i][0].toString().trim();
+      var alunoPlanilha = dados[i][1].toString().trim();
+      
+      if (turmaPlanilha === turmaAluno.trim() && alunoPlanilha === nomeAluno.trim()) {
+        abaAlunos.getCell(i + 1, 3).setValue(idFoto); // Escreve o ID do Drive na linha do aluno, coluna C
+        break;
+      }
+    }
+    
+    // Retorna sucesso para o seu aplicativo HTML
+    return ContentService.createTextOutput(JSON.stringify({ status: "sucesso", id: idFoto }))
+                         .setMimeType(ContentService.MimeType.JSON);
+                         
+  } catch (erro) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "erro", mensagem: erro.toString() }))
+                         .setMimeType(ContentService.MimeType.JSON);
+  }
 }
     
 </script>
