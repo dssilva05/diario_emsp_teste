@@ -769,10 +769,9 @@ function popularTurmas() {
             turmas.forEach(t => sel.add(new Option(t, t)));
         }
     });
-}
-}
+} // <-- MANTENHA APENAS ESTA CHAVE DE FECHAMENTO AQUI
 
-    function abrirAba(num) {
+function abrirAba(num) {
     // Se tentar abrir a aba 4 e não for gestor, bloqueia
     if (num === 4 && cargoLogado !== "Diretor") {
         alert("Acesso restrito à equipe de gestão.");
