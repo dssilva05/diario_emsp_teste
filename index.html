@@ -758,9 +758,9 @@ async function carregarDatalistProfessores() {
     }
 }
 
-    function popularTurmas() {
-    // Adicionado 'selTurmaTransf' na lista
-    const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino', 'selTurmaTransf', 'selTurmaExcluir'];
+function popularTurmas() {
+    // Adicionado o ID 'fotoAlunoTurma' para que ele também receba a lista de turmas da escola
+    const ids = ['selTurma', 'selTurmaCons', 'novoAlunoTurma', 'novaTurmaDestino', 'selTurmaTransf', 'selTurmaExcluir', 'fotoAlunoTurma'];
     const turmas = Object.keys(ALUNOS).sort();
     ids.forEach(id => {
         const sel = document.getElementById(id);
@@ -769,6 +769,7 @@ async function carregarDatalistProfessores() {
             turmas.forEach(t => sel.add(new Option(t, t)));
         }
     });
+}
 }
 
     function abrirAba(num) {
@@ -1831,59 +1832,6 @@ function irParaConsultaDireta(nome, turma) {
 
     // Inicia a leitura do arquivo como uma URL de dados (necessário para o Base64)
     fr.readAsDataURL(arquivo);
-}
-    
-    function salvarFotoNoDrive(e) {
-  try {
-    var nomeAluno = e.parameter.nomeAluno;
-    var turmaAluno = e.parameter.turmaAluno;
-    var imagemBase64 = e.parameter.imagemBase64;
-    var tipoMime = e.parameter.tipoMime; // ex: image/jpeg
-    
-    // 1. CONVERTE O TEXTO BASE64 DE VOLTA PARA UM ARQUIVO DE IMAGEM
-    var bytes = Utilities.base64Decode(imagemBase64);
-    var blob = Utilities.newBlob(bytes, tipoMime, nomeAluno + " - " + turmaAluno + ".jpg");
-    
-    // 2. ABRE A PASTA DO DRIVE (Cole o ID da sua pasta criada na linha abaixo)
-    var ID_PASTA_FOTOS = "1q4NgSxTU2XYKy3yqdy77kSLDJLpQSPPg"; 
-    var pasta = DriveApp.getFolderById(ID_PASTA_FOTOS);
-    
-    // Se o aluno já tiver uma foto antiga com o mesmo nome nessa pasta, nós a deletamos para não acumular lixo
-    var arquivosAntigos = pasta.getFilesByName(nomeAluno + " - " + turmaAluno + ".jpg");
-    while (arquivosAntigos.hasNext()) {
-      arquivosAntigos.next().setTrashed(true);
-    }
-    
-    // Salva a nova foto na pasta
-    var arquivoCriado = pasta.createFile(blob);
-    var idFoto = arquivoCriado.getId(); // Esse ID é o que usaremos para exibir a imagem
-    
-    // 3. SALVA O ID DA FOTO NA SUA PLANILHA DE ALUNOS
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    // ATENÇÃO: Ajuste o nome da aba se na sua planilha for diferente de "Alunos"
-    var abaAlunos = ss.getSheetByName("Estudantes"); 
-    var dados = abaAlunos.getDataRange().getValues();
-    
-    // Vamos procurar a linha correta combinando a Turma (Coluna A) e o Aluno (Coluna B)
-    // E vamos salvar o ID da foto na Coluna C (3ª coluna)
-    for (var i = 1; i < dados.length; i++) {
-      var turmaPlanilha = dados[i][0].toString().trim();
-      var alunoPlanilha = dados[i][1].toString().trim();
-      
-      if (turmaPlanilha === turmaAluno.trim() && alunoPlanilha === nomeAluno.trim()) {
-        abaAlunos.getCell(i + 1, 3).setValue(idFoto); // Escreve o ID do Drive na linha do aluno, coluna C
-        break;
-      }
-    }
-    
-    // Retorna sucesso para o seu aplicativo HTML
-    return ContentService.createTextOutput(JSON.stringify({ status: "sucesso", id: idFoto }))
-                         .setMimeType(ContentService.MimeType.JSON);
-                         
-  } catch (erro) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "erro", mensagem: erro.toString() }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  }
 }
     
 </script>
