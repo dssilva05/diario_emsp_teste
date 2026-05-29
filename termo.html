@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Recolhimento - E.M. Sobral Pinto</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #e9ecef; padding: 20px; }
+        .no-print { max-width: 700px; margin: auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #219150; }
+        
+        /* Estilo do Documento (Visualização de Impressão) */
+        #doc { display: none; background: white; width: 18cm; min-height: 25cm; margin: auto; padding: 1.5cm; color: black; line-height: 1.5; border: 1px solid #ddd; }
+        .header { text-align: center; font-weight: bold; margin-bottom: 30px; text-transform: uppercase; font-size: 12pt; }
+        .logo { width: 150px; margin-bottom: 10px; }
+        .title { text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 25px; font-size: 13pt; }
+        .content { text-align: justify; font-size: 12pt; }
+        .quote { margin: 20px 0; font-style: italic; border-left: 3px solid #ccc; padding-left: 15px; font-size: 11pt; }
+        .signature-box { margin-top: 60px; text-align: center; }
+        .line { border-top: 1px solid black; width: 80%; margin: 40px auto 5px auto; }
+
+        @media print {
+            .no-print { display: none; }
+            #doc { display: block; border: none; }
+            body { background: white; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print">
+    <h2 style="text-align:center; color: #0056b3;">Registrar Recolhimento</h2>
+    <div class="form-group"><label>Aluno(a):</label><input type="text" id="aluno" placeholder="Nome completo"></div>
+    <div class="form-group"><label>Turma:</label><input type="text" id="turma" placeholder="Ex: 902"></div>
+    <div class="form-group"><label>Professor(a) Regente:</label><input type="text" id="prof" placeholder="Nome do professor na aula"></div>
+    
+    <div class="form-group">
+        <label>Aparelho (Marca/Modelo):</label>
+        <input type="text" id="aparelho" list="marcas_modelos" placeholder="Digite ou selecione o modelo...">
+        <datalist id="marcas_modelos">
+            <option value="Samsung Galaxy A54">
+            <option value="Samsung Galaxy S24">
+            <option value="Motorola Moto G54">
+            <option value="iPhone 13">
+            <option value="iPhone 15">
+            <option value="Xiaomi Redmi Note 13">
+        </datalist>
+    </div>
+
+    <div class="form-group"><label>Recolhido por (Funcionário):</label><input type="text" id="quem" placeholder="Seu nome ou cargo"></div>
+    
+    <button onclick="gerarEImprimir()">Gerar Termo e Salvar Modelo</button>
+    <p style="font-size: 11px; color: #666; text-align: center; margin-top: 10px;">
+        * Novos modelos digitados serão salvos automaticamente para o próximo uso.
+    </p>
+</div>
+
+<div id="doc">
+    <div class="header">
+        <img src="https://lh3.googleusercontent.com/u/0/d/16JafsMd81Ho26kkaqCI-YTvsCGIXQ2Fy" class="logo"><br>
+        ESTADO DE MINAS GERAIS <br>
+        PREFEITURA MUNICIPAL DE BELO HORIZONTE <br>
+        ESCOLA MUNICIPAL SOBRAL PINTO
+    </div>
+
+    <div class="title">TERMO DE RECOLHIMENTO DE CELULAR POR USO INDEVIDO</div>
+
+    <div class="content">
+        <p>O(a) aluno(a) <strong id="out_aluno"></strong>, da turma <strong id="out_turma"></strong> estava manuseando o celular na aula do(a) Prof(a). <span id="out_prof"></span>. O celular foi recolhido e será entregue aos responsáveis segundo a <strong>Lei Federal Nº 15.100/2025</strong> e <strong>Portaria SMED N° 022/2025</strong> que dispõe sobre a utilização de aparelhos eletrônicos nas Escolas Municipais de Belo Horizonte.</p>
+
+        <div class="quote">
+            “Art. 1º – Fica proibido aos(às) estudantes (...) o uso de aparelhos eletrônicos, inclusive telefones celulares, em sala de aula, exceto para a realização de atividades de cunho estritamente pedagógico ou didático...”
+        
+        <p>§ 1º – Para fins desta Portaria, consideram-se como sala de aula todos os espaços escolares ou extraescolares nos quais são desenvolvidas atividades pedagógicas diárias.</p>
+	</div>
+        <p>O aparelho da marca/modelo <strong id="out_aparelho"></strong> foi recolhido por <span id="out_quem"></span> em <span id="out_data"></span> e será entregue exclusivamente ao responsável legal do estudante.</p>
+    </div>
+
+    <div class="signature-box">
+        <div class="line"></div>Assinatura do Aluno
+        <div class="line" style="margin-top: 60px;"></div>Assinatura do Responsável
+        <div class="line" style="margin-top: 60px;"></div>Assinatura da Coordenação
+    </div>
+
+    <p style="text-align: right; margin-top: 40px;">Belo Horizonte, <span id="out_data_extenso"></span>.</p>
+</div>
+
+<script>
+    // 1. CARREGAR MODELOS SALVOS AO ABRIR A PÁGINA
+    window.onload = function() {
+        const salvos = JSON.parse(localStorage.getItem('modelos_celular')) || [];
+        const lista = document.getElementById('marcas_modelos');
+        
+        salvos.forEach(modelo => {
+            // Verifica se o modelo já não existe nas opções fixas do HTML antes de adicionar
+            if (!itemExisteNaLista(modelo)) {
+                let option = document.createElement('option');
+                option.value = modelo;
+                lista.appendChild(option);
+            }
+        });
+    }
+
+    // Função auxiliar para evitar duplicatas (case-insensitive e sem espaços extras)
+    function itemExisteNaLista(termo) {
+        const lista = document.getElementById('marcas_modelos');
+        const opcoes = Array.from(lista.options).map(opt => opt.value.toLowerCase().trim());
+        return opcoes.includes(termo.toLowerCase().trim());
+    }
+
+    function gerarEImprimir() {
+        const aluno = document.getElementById('aluno').value;
+        const turma = document.getElementById('turma').value;
+        const prof = document.getElementById('prof').value;
+        const aparelho = document.getElementById('aparelho').value;
+        const quem = document.getElementById('quem').value;
+
+        // 2. SALVAR NOVO MODELO (SÓ SE FOR REALMENTE NOVO)
+        if (aparelho.trim() !== "" && !itemExisteNaLista(aparelho)) {
+            let salvos = JSON.parse(localStorage.getItem('modelos_celular')) || [];
+            
+            // Adiciona ao array de salvos
+            salvos.push(aparelho.trim());
+            localStorage.setItem('modelos_celular', JSON.stringify(salvos));
+            
+            // Adiciona visualmente na lista do datalist
+            let option = document.createElement('option');
+            option.value = aparelho.trim();
+            document.getElementById('marcas_modelos').appendChild(option);
+        }
+
+        // 3. PREENCHER O DOCUMENTO
+        document.getElementById('out_aluno').innerText = aluno || "____________________";
+        document.getElementById('out_turma').innerText = turma || "____";
+        document.getElementById('out_prof').innerText = prof || "____________________";
+        document.getElementById('out_aparelho').innerText = aparelho || "____________________";
+        document.getElementById('out_quem').innerText = quem || "____________________";
+        
+        const hoje = new Date();
+        document.getElementById('out_data').innerText = hoje.toLocaleDateString('pt-BR');
+        document.getElementById('out_data_extenso').innerText = hoje.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        // 4. DISPARAR IMPRESSÃO
+        window.print();
+    }
+</script>
+
+</body>
+</html>
