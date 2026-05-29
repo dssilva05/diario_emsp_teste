@@ -233,6 +233,95 @@
 .modal-foto-ampliada.active img {
     transform: scale(1);
 }
+
+        /* Ícone dos 3 tracinhos (Botão Hambúrguer) */
+.menu-hamburguer {
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+}
+
+/* Barra Lateral Oculta (Menu) */
+.sidebar-menu {
+    position: fixed;
+    top: 0;
+    left: -280px; /* Começa escondido para fora da tela */
+    width: 280px;
+    height: 100vh;
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    box-shadow: 4px 0 15px rgba(0,0,0,0.3);
+    z-index: 20002; /* Fica acima de tudo */
+    transition: left 0.3s ease;
+    box-sizing: border-box;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Quando o menu estiver ativo, ele desliza para dentro */
+.sidebar-menu.active {
+    left: 0;
+}
+
+/* Cabeçalho do Menu */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--blue);
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.sidebar-header h3 {
+    margin: 0;
+    color: var(--blue);
+    font-size: 18px;
+}
+.btn-fechar-menu {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #666;
+    cursor: pointer;
+}
+
+/* Links dentro do Menu */
+.menu-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 8px;
+    transition: 0.2s;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+.menu-link:hover {
+    background: rgba(13, 71, 161, 0.1);
+    color: var(--blue);
+}
+
+/* Fundo escurecido atrás do menu */
+.menu-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 20001;
+    display: none;
+}
+.menu-overlay.active {
+    display: block;
+}
         
     </style>
 </head>
@@ -242,12 +331,25 @@
 <div id="status-bar">Aguardando status da rede...</div>
 
 <header>
+    <button class="menu-hamburguer" onclick="toggleMenu(true)">☰</button>
+    
     <img src="https://lh3.googleusercontent.com/u/0/d/16JafsMd81Ho26kkaqCI-YTvsCGIXQ2Fy" alt="Perfil" class="img-topo" id="imgPerfil">
     <div class="escola-txt">
         <h1>Escola Municipal Sobral Pinto</h1>
         <p>Rua das Almas, 120 - Conjunto Paulo VI, Belo Horizonte - MG.<br>CEP: 31998-020</p>
     </div>
 </header>
+
+    <div id="menuOverlay" class="menu-overlay" onclick="toggleMenu(false)"></div>
+
+<div id="sidebarMenu" class="sidebar-menu">
+    <div class="sidebar-header">
+        <h3>📂 Links e Documentos</h3>
+        <button class="btn-fechar-menu" onclick="toggleMenu(false)">✕</button>
+    </div>
+    
+    <a href="./termo.html" class="menu-link">Termo de Recolhimento de Celular</a>
+</div>
 
 <div id="secaoAcesso" class="auth-wrapper">
     <div id="telaLogin" class="box-auth">
@@ -1885,6 +1987,20 @@ function irParaConsultaDireta(nome, turma) {
     if (modal && imagem) {
         imagem.src = url;
         modal.classList.add('active');
+    }
+}
+
+    function toggleMenu(abrir) {
+    const menu = document.getElementById('sidebarMenu');
+    const overlay = document.getElementById('menuOverlay');
+    if (menu && overlay) {
+        if (abrir) {
+            menu.classList.add('active');
+            overlay.classList.add('active');
+        } else {
+            menu.classList.remove('active');
+            overlay.classList.remove('active');
+        }
     }
 }
     
