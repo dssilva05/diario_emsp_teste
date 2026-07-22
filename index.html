@@ -422,6 +422,16 @@
                     <span>Foi enviada Advertência por Escrito?</span>
                 </label>
             </div>
+
+            <div id="boxEncaminhamento" style="margin-top: 15px;">
+                <label>📌 Encaminhar Ocorrência para:</label>
+                <select id="selEncaminhamento">
+                    <option value="">-- Não encaminhar (Apenas registrar) --</option>
+                    <option value="REUNIAO_PAIS">Solicitar reunião com os pais</option>
+                    <option value="COORDENACAO">Encaminhar para a Coordenação</option>
+                    <option value="PAS">Encaminhar para a Equipe PAS</option>
+                </select>
+            </div>
             
             <label>Tipo de Ocorrência Comum:</label>
 <select id="selOcorrenciaRapida">
@@ -468,7 +478,7 @@
         <div id="aba3" class="hidden">
     <h2 style="color:var(--blue); margin-top:0;">📊 Controle Geral de Ocorrências</h2>
     <button class="btn-main" onclick="gerarAlertaCritico()">🔄 Atualizar ocorrências</button>
-    
+    <div id="painelEncaminhamentos" style="margin-top:20px;"></div>
     <div id="resDashboard" class="hidden">
         <div class="dashboard-title">Alunos Críticos (+10 ocorrências)</div>
         <div id="resAlertaCritico"></div>
@@ -1025,6 +1035,7 @@ async function gravarOcorrencia() {
         aluno: aVal,
         texto: relatoFinal,
         advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
+        encaminhamento: document.getElementById('selEncaminhamento').value,
         tratativa: tratativaFinal,
         relatoGestao: relatoGestaoFinal
     };
@@ -1339,6 +1350,10 @@ function exibirDados(data, t, a, p) {
     document.getElementById('relatoTexto').value = texto;
 
     const cont = document.getElementById('containerTratativa');
+
+    if (document.getElementById('selEncaminhamento')) {
+        document.getElementById('selEncaminhamento').value = encaminhamento || "";
+    }
     
     if (cargoLogado === "Diretor" && focarTratativa === true) {
         // Extração precisa da data da convocação
@@ -1457,6 +1472,7 @@ function exibirDados(data, t, a, p) {
             registro[5], // texto (relato)
             registro[7] || "", // tratativa
             registro[8] || "", // relatoGestao
+            registro[9] || "",
             focarTratativa
         );
     }
@@ -1485,19 +1501,29 @@ async function gerarAlertaCritico() {
         let contAlunos = {}, contManha = {}, contTarde = {}, contTipos = {}, contTratativas = {};
         let contProfessores = {}; 
         let detalheTurmas = {};
+        
+        let encaminhamentosPais = [];
+        let encaminhamentosCoord = [];
+        let encaminhamentosPAS = [];
+        
         const turmasTarde = ["5ºC", "601", "602", "603", "701", "702", "801", "802", "901", "902"];
-        const cores = ["#0d47a1", "#ffd600", "#4caf50", "#f44336", "#9c27b0", "#ff9800", "#00bcd4"];
 
+        // 1. Processamento e contagem dos dados (Laço Principal)
         for (let i = 1; i < data.length; i++) {
-            // Ignora linhas vazias para não dar erro
             if (!data[i] || !data[i][2]) continue;
 
             const profField = data[i][2] || ""; 
             const turma = data[i][3];
             const aluno = data[i][4];
             const tratativaRaw = (data[i][7] || "").split(" (")[0].trim();
+            const enc = data[i][9] || ""; // Verifique se o índice da coluna na planilha é 9
 
-            // Ranking de Professores (Pega o nome após o colchete)
+            // Separa os encaminhamentos para contagem
+            if (enc === "REUNIAO_PAIS") encaminhamentosPais.push(data[i]);
+            if (enc === "COORDENACAO") encaminhamentosCoord.push(data[i]);
+            if (enc === "PAS") encaminhamentosPAS.push(data[i]);
+
+            // Ranking de Professores
             let nomeProfLimpo = profField.split('] ')[1] || profField;
             contProfessores[nomeProfLimpo] = (contProfessores[nomeProfLimpo] || 0) + 1;
 
@@ -1519,7 +1545,39 @@ async function gerarAlertaCritico() {
             if (tratativaRaw !== "") contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
         }
 
-        // Renderizações na tela
+        // 2. Montagem dos Alertas (Executado UMA VEZ após contar tudo)
+        let htmlEnc = "";
+
+        // Alerta para Coordenação / Direção
+        if (cargoLogado === "Diretor") { 
+            const totalPendentes = encaminhamentosPais.length + encaminhamentosCoord.length;
+            if (totalPendentes > 0) {
+                htmlEnc += `
+                <div style="background:#fff3cd; border-left:6px solid #ffc107; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <h3 style="margin:0; color:#856404;">🔔 Encaminhamentos para Coordenação/Direção (${totalPendentes})</h3>
+                    <p style="margin:5px 0 0 0; font-size:13px;">Existem solicitações de reunião com os pais ou encaminhamentos diretos aguardando atendimento.</p>
+                </div>`;
+            }
+        }
+
+        // Alerta para Equipe PAS / Direção
+        const dadosUsuario = JSON.parse(localStorage.getItem('diarioAcessoSobral') || '{}');
+        const ehPAS = (dadosUsuario.cargo || "").toUpperCase().includes("PAS");
+        
+        if (ehPAS || cargoLogado === "Diretor") {
+            if (encaminhamentosPAS.length > 0) {
+                htmlEnc += `
+                <div style="background:#e8f5e9; border-left:6px solid #2e7d32; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <h3 style="margin:0; color:#1b5e20;">🧠 Encaminhamentos para Equipe PAS (${encaminhamentosPAS.length})</h3>
+                    <p style="margin:5px 0 0 0; font-size:13px;">Existem ocorrências encaminhadas especificamente para acompanhamento da Equipe PAS.</p>
+                </div>`;
+            }
+        }
+
+        // 3. Injeção no HTML da tela
+        const painel = document.getElementById('painelEncaminhamentos');
+        if (painel) painel.innerHTML = htmlEnc;
+
         document.getElementById('resAlertaCritico').innerHTML = renderListaAlunos(Object.fromEntries(Object.entries(contAlunos).filter(a => a[1] >= 10)), 20);
         document.getElementById('graficoTurmas').innerHTML = renderColunas(contManha, "Manhã") + renderColunas(contTarde, "Tarde");
         document.getElementById('listaAlunosMaisOcorrencias').innerHTML = renderListaAlunos(contAlunos, 8);
@@ -1607,6 +1665,9 @@ function renderPizza(obj, titulo) {
 
     const cont = document.getElementById('containerTratativa');
 
+    if (document.getElementById('selEncaminhamento')) {
+    document.getElementById('selEncaminhamento').value = "";
+}
     // 2. Lógica Inteligente para o Bloco de Tratativa
     if (cargoLogado === "Diretor") {
         // Se for gestor, apenas reseta os valores dos campos internos sem remover o HTML
