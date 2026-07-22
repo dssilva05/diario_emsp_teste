@@ -432,6 +432,12 @@
                     <option value="PAS">Encaminhar para a Equipe PAS</option>
                 </select>
             </div>
+
+            <div id="boxAnexo" style="margin-top: 15px; background: #f8f9fa; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                <label style="margin-top:0;">📎 Anexar Documento (Ata, Laudo, Atestado, etc.):</label>
+                <input type="file" id="arquivoAnexo" accept="image/*,.pdf,.doc,.docx" style="margin-top: 5px;">
+                <div id="linkAnexoAtual" style="margin-top: 5px; font-size: 12px; display: none;"></div>
+            </div>
             
             <label>Tipo de Ocorrência Comum:</label>
 <select id="selOcorrenciaRapida">
@@ -959,29 +965,24 @@ async function gravarOcorrencia() {
     const tVal = document.getElementById('selTurma').value;
     const aVal = document.getElementById('selAluno').value;
     const dVal = document.getElementById('dataOcorrenciaManual').value;
-    
     const opcaoRapida = document.getElementById('selOcorrenciaRapida').value; 
     const rVal = document.getElementById('relatoTexto').value;
 
-    // 1. Validação de campos obrigatórios
     if (!dVal || !tVal || !aVal || (opcaoRapida === "" && rVal.trim() === "")) {
         return alert("⚠️ Preencha Data, Turma, Aluno e escolha uma Ocorrência ou escreva o Relato!");
     }
 
-    // 2. NOVA LÓGICA COM TRAVA DE SEGURANÇA (Professor de Referência): 
     let profRef = "";
     const inputRef = document.getElementById('profReferencia'); 
     if (inputRef && inputRef.value.trim() !== "") {
         profRef = `(Prof: ${inputRef.value.trim()}) `;
     }
 
-    // Concatena tudo com segurança para o campo de texto
     const relatoFinal = (opcaoRapida + profRef + rVal).trim();
 
     let tratativaFinal = "";
     let relatoGestaoFinal = "";
 
-    // 3. Lógica de Diretor vs Professor (Sua original)
     if (cargoLogado === "Diretor") {
         const selT = document.getElementById('selTratativa');
         const dtC = document.getElementById('dataConvocacao');
@@ -993,7 +994,7 @@ async function gravarOcorrencia() {
                 const dataFormatada = dtC.value.split('-').reverse().join('/');
                 const horaVal = document.getElementById('horarioConvocacao').value;
                 const horaFormatada = horaVal ? ` às ${horaVal}` : '';
-            tratativaFinal += ` (Data: ${dataFormatada}${horaFormatada})`;
+                tratativaFinal += ` (Data: ${dataFormatada}${horaFormatada})`;
             }
         } else {
             tratativaFinal = window.tratativaAntiga || "";
@@ -1004,7 +1005,6 @@ async function gravarOcorrencia() {
         relatoGestaoFinal = window.relatoGestaoAntigo || "";
     }
 
-    // 4. Lógica de Identificação de Prefixo
     let prefixo = "Prof: ";
     const dadosUsuario = JSON.parse(localStorage.getItem('diarioAcessoSobral') || '{}');
     const cargoReal = (dadosUsuario.cargo || "").toUpperCase();
@@ -1016,34 +1016,51 @@ async function gravarOcorrencia() {
         prefixo = "Gestão: ";
     }
 
-    // --- NOVA LÓGICA PARA DISCIPLINAS MULTI ---
     let disciplinaParaGravar = disciplinaLogada; 
     const selMulti = document.getElementById('selDisciplinaMulti');
-    // Se o seletor MULTI existir na tela, usa o valor selecionado nele
-    if (selMulti) {
-        disciplinaParaGravar = selMulti.value;
+    if (selMulti) disciplinaParaGravar = selMulti.value;
+
+    const btn = document.getElementById('btnGravar');
+    const textoOriginal = btn.innerText;
+    btn.innerText = "⏳ Processando...";
+    btn.disabled = true;
+
+    // 🟢 LÓGICA DE PROCESSAMENTO DO ANEXO
+    const arquivoInput = document.getElementById('arquivoAnexo');
+    let arquivoBase64 = "";
+    let nomeArquivo = "";
+    let tipoMime = "";
+
+    if (arquivoInput && arquivoInput.files.length > 0) {
+        const arq = arquivoInput.files[0];
+        nomeArquivo = arq.name;
+        tipoMime = arq.type;
+        arquivoBase64 = await new Promise((resolve) => {
+            const fr = new FileReader();
+            fr.onload = (e) => resolve(e.target.result.split(',')[1]);
+            fr.readAsDataURL(arq);
+        });
     }
 
-    // 5. Montagem dos dados
     const dados = {
         acao: idEditando ? 'editarOcorrencia' : 'salvarOcorrencia',
         id: idEditando || Date.now(),
-        // Salva sempre no SEU nome, mas usa a disciplina escolhida (se for MULTI)
         professor: `[${document.getElementById('selTipoRegistro').value}] ${prefixo}${profNomeLogado.split(" ")[0]} (${disciplinaParaGravar})`,
         dataManual: dVal.split("-").reverse().join("/"),
         turma: tVal,
         aluno: aVal,
         texto: relatoFinal,
         advertencia: document.getElementById('chkAdvertencia').checked ? "SIM" : "NÃO",
-        encaminhamento: document.getElementById('selEncaminhamento').value,
         tratativa: tratativaFinal,
-        relatoGestao: relatoGestaoFinal
+        relatoGestao: relatoGestaoFinal,
+        encaminhamento: document.getElementById('selEncaminhamento') ? document.getElementById('selEncaminhamento').value : "",
+        
+        // 🟢 NOVOS CAMPOS PARA O ANEXO
+        anexoBase64: arquivoBase64,
+        nomeAnexo: nomeArquivo,
+        tipoMimeAnexo: tipoMime,
+        anexoExistente: window.anexoAntigo || ""
     };
-
-    const btn = document.getElementById('btnGravar');
-    const textoOriginal = btn.innerText;
-    btn.innerText = "⏳ Gravando...";
-    btn.disabled = true;
 
     if (navigator.onLine) {
         try {
@@ -1166,7 +1183,7 @@ async function gravarOcorrencia() {
 }
 
 function exibirDados(data, t, a, p) {
-    window.ultimoResultadoConsulta = data; // Salva para permitir edição de textos longos
+    window.ultimoResultadoConsulta = data; // Salva para permitir edição
     const rDiv = document.getElementById('resConsulta');
     const verTodos = document.getElementById('chkTodosRegistros').checked;
 
@@ -1213,9 +1230,8 @@ function exibirDados(data, t, a, p) {
     nomesOrdenados.forEach(nome => {
         const qtd = agrupadoPorAluno[nome].length;
         
-        // --- BUSCA DINÂMICA DO ID DA FOTO E DO LAUDO NO OBJETO LOCAL ALUNOS ---
         let idFotoDrive = "";
-        let laudoObservacao = ""; // Nova variável para guardar a informação do laudo
+        let laudoObservacao = "";
         
         if (ALUNOS && ALUNOS[t]) {
             const cadastroAluno = ALUNOS[t].find(al => {
@@ -1225,11 +1241,10 @@ function exibirDados(data, t, a, p) {
             
             if (cadastroAluno) {
                 if (cadastroAluno.fotoId) idFotoDrive = cadastroAluno.fotoId;
-                if (cadastroAluno.laudo) laudoObservacao = cadastroAluno.laudo; // Captura o campo laudo
+                if (cadastroAluno.laudo) laudoObservacao = cadastroAluno.laudo;
             }
         }
 
-        // Bloco HTML Condicional do Laudo
         let blocoLaudoHTML = "";
         if (laudoObservacao && laudoObservacao.trim() !== "") {
             blocoLaudoHTML = `
@@ -1240,18 +1255,16 @@ function exibirDados(data, t, a, p) {
             `;
         }
 
-        // URL corrigida para renderização direta em tags <img> sem bloqueio do Drive
         const urlFoto = idFotoDrive 
             ? `https://lh3.googleusercontent.com/d/${idFotoDrive}`
             : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nome)}&backgroundType=solid,gradientLinear`;
         
-        // MODIFICADO: Ajustado para acomodar o laudo logo abaixo do nome dentro do layout flex do cabeçalho azul
         html += `
         <div style="background: var(--blue); color: white; padding: 12px 15px; margin-top: 20px; border-radius: 8px 8px 0 0; font-weight: bold; border-bottom: 3px solid var(--gold); display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1; max-width: 80%;">
                 <img src="${urlFoto}" 
-                             onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=avatar'"
-                             style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: white; border: 2px solid var(--gold); box-shadow: 0 2px 4px rgba(0,0,0,0.15); cursor: zoom-in; flex-shrink: 0;"
+                     onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=avatar'"
+                     style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: white; border: 2px solid var(--gold); box-shadow: 0 2px 4px rgba(0,0,0,0.15); cursor: zoom-in; flex-shrink: 0;"
                      onclick="ampliarFotoAluno('${urlFoto}')">
                 <div style="display: flex; flex-direction: column; align-items: flex-start; width: 100%;">
                     <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.3px;">👤 ${nome}</span>
@@ -1300,6 +1313,26 @@ function exibirDados(data, t, a, p) {
                     <strong>🔒 Relato Privado:</strong> ${r[8]}
                 </div>` : "";
 
+            // 🟢 1. TRATAMENTO DO ENCAMINHAMENTO (Coluna J / r[9])
+            let blocoEncaminhamentoHTML = "";
+            const encVal = r[9] || "";
+            if (encVal === "REUNIAO_PAIS") {
+                blocoEncaminhamentoHTML = `<span style="background:#fff3cd; color:#856404; border:1px solid #ffeeba; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; margin-left:8px;">📌 Solicitada Reunião com Pais</span>`;
+            } else if (encVal === "COORDENACAO") {
+                blocoEncaminhamentoHTML = `<span style="background:#e3f2fd; color:#0d47a1; border:1px solid #bbdefb; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; margin-left:8px;">📌 Encaminhado Coordenação</span>`;
+            } else if (encVal === "PAS") {
+                blocoEncaminhamentoHTML = `<span style="background:#e8f5e9; color:#1b5e20; border:1px solid #c8e6c9; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; margin-left:8px;">🧠 Encaminhado Equipe PAS</span>`;
+            }
+
+            // 🟢 2. TRATAMENTO DO DOCUMENTO ANEXO (Coluna K / r[10])
+            const linkAnexoUrl = r[10] || "";
+            const blocoAnexoHTML = linkAnexoUrl ? 
+                `<div style="margin-top:8px;">
+                    <a href="${linkAnexoUrl}" target="_blank" style="display:inline-block; background:#f5f5f5; color:#333; border:1px solid #ccc; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:bold; text-decoration:none;">
+                        📎 Abrir Documento Anexo
+                    </a>
+                 </div>` : "";
+
             html += `
             <div class="item-ocorrencia" style="margin-top: 10px; border-left: 5px solid var(--gold); position: relative;">
                 <div style="float:right; display:flex; gap:5px;">
@@ -1309,8 +1342,9 @@ function exibirDados(data, t, a, p) {
                         <button onclick="apagarRegistro('${r[0]}')" style="background:red; color:white; border:none; padding:5px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold;">X</button>
                     ` : ''}
                 </div>
-                <small><strong>${tri}</strong> | 📅 ${r[1]} | ✍️ ${r[2]}</small>
+                <small><strong>${tri}</strong> | 📅 ${r[1]} | ✍️ ${r[2]} ${blocoEncaminhamentoHTML}</small>
                 <p style="margin:8px 0; font-size:14px;">${r[5]}</p>
+                ${blocoAnexoHTML}
                 ${r[6] === "SIM" ? '<p style="color:red; font-weight:bold; font-size:11px;">⚠️ Advertência Enviada</p>' : ''}
                 ${textoTratativaBruto ? `<div style="background:#e8f5e9; padding:8px; border-left:3px solid #4caf50; font-size:12px; margin-top:5px;"><strong>Ação Gestão:</strong> ${textoExibicao} ${avisoDataReuniao}</div>` : ''}
                 ${relatoPrivadoHTML}
@@ -1332,6 +1366,7 @@ function exibirDados(data, t, a, p) {
     // ESTAS DUAS LINHAS SÃO A CHAVE PARA NÃO SUMIR:
     window.tratativaAntiga = tratativa || "";
     window.relatoGestaoAntigo = relatoGestao || "";
+    window.anexoAntigo = anexoUrl || "";
 
     idEditando = id; 
     tab(1);
@@ -1353,6 +1388,14 @@ function exibirDados(data, t, a, p) {
 
     if (document.getElementById('selEncaminhamento')) {
         document.getElementById('selEncaminhamento').value = encaminhamento || "";
+    }
+
+    const boxLink = document.getElementById('linkAnexoAtual');
+    if (anexoUrl && boxLink) {
+        boxLink.style.display = "block";
+        boxLink.innerHTML = `📎 Anexo atual: <a href="${anexoUrl}" target="_blank" style="color:var(--blue); font-weight:bold;">Visualizar documento</a> (Selecione outro arquivo apenas se quiser substituir)`;
+    } else if (boxLink) {
+        boxLink.style.display = "none";
     }
     
     if (cargoLogado === "Diretor" && focarTratativa === true) {
@@ -1473,6 +1516,7 @@ function exibirDados(data, t, a, p) {
             registro[7] || "", // tratativa
             registro[8] || "", // relatoGestao
             registro[9] || "",
+            registro[10] || "",
             focarTratativa
         );
     }
@@ -1684,10 +1728,15 @@ function renderPizza(obj, titulo) {
     // 1. Limpa os campos de relato e ocorrência rápida
     document.getElementById('relatoTexto').value = "";
     document.getElementById('selOcorrenciaRapida').value = "";
+    document.getElementById('arquivoAnexo').value = "";
     
     const inputRef = document.getElementById('profReferencia');
     if (inputRef) inputRef.value = ""; 
 
+    const boxLink = document.getElementById('linkAnexoAtual');
+        if (boxLink) { boxLink.style.display = "none"; boxLink.innerHTML = ""; }
+    window.anexoAntigo = "";
+    
     const cont = document.getElementById('containerTratativa');
 
     if (document.getElementById('selEncaminhamento')) {
