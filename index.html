@@ -1516,9 +1516,9 @@ async function gerarAlertaCritico() {
             const turma = data[i][3];
             const aluno = data[i][4];
             const tratativaRaw = (data[i][7] || "").split(" (")[0].trim();
-            const enc = data[i][9] || ""; // Verifique se o índice da coluna na planilha é 9
+            const enc = data[i][9] || ""; // Pega o encaminhamento da Coluna J
 
-            // Separa os encaminhamentos para contagem
+            // Separa as ocorrências para a lista de pendências
             if (enc === "REUNIAO_PAIS") encaminhamentosPais.push(data[i]);
             if (enc === "COORDENACAO") encaminhamentosCoord.push(data[i]);
             if (enc === "PAS") encaminhamentosPAS.push(data[i]);
@@ -1545,17 +1545,37 @@ async function gerarAlertaCritico() {
             if (tratativaRaw !== "") contTratativas[tratativaRaw] = (contTratativas[tratativaRaw] || 0) + 1;
         }
 
-        // 2. Montagem dos Alertas (Executado UMA VEZ após contar tudo)
+        // 2. Montagem dos Alertas e Listagem de Ocorrências Pendentes
         let htmlEnc = "";
+
+        // Função auxiliar interna para gerar os cards das ocorrências pendentes
+        const renderItensPendentes = (lista) => {
+            let h = `<div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">`;
+            lista.forEach(r => {
+                h += `
+                <div style="background:white; padding:10px; border-radius:6px; border:1px solid #ddd; color:#333; font-size:13px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                        <strong>👤 ${r[4]} (${r[3]})</strong>
+                        <button onclick="prepararEdicao('${r[0]}', true)" style="background:#1976d2; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">
+                            🛠️ Tratar / Ver
+                        </button>
+                    </div>
+                    <small style="color:#666;">📅 ${r[1]} | ✍️ ${r[2]}</small>
+                    <p style="margin:5px 0 0 0; font-size:13px; color:#444;">${r[5]}</p>
+                </div>`;
+            });
+            return h + `</div>`;
+        };
 
         // Alerta para Coordenação / Direção
         if (cargoLogado === "Diretor") { 
-            const totalPendentes = encaminhamentosPais.length + encaminhamentosCoord.length;
-            if (totalPendentes > 0) {
+            const pendentesCoord = [...encaminhamentosPais, ...encaminhamentosCoord];
+            if (pendentesCoord.length > 0) {
                 htmlEnc += `
                 <div style="background:#fff3cd; border-left:6px solid #ffc107; padding:15px; border-radius:8px; margin-bottom:15px;">
-                    <h3 style="margin:0; color:#856404;">🔔 Encaminhamentos para Coordenação/Direção (${totalPendentes})</h3>
-                    <p style="margin:5px 0 0 0; font-size:13px;">Existem solicitações de reunião com os pais ou encaminhamentos diretos aguardando atendimento.</p>
+                    <h3 style="margin:0; color:#856404;">🔔 Encaminhamentos para Coordenação/Direção (${pendentesCoord.length})</h3>
+                    <p style="margin:5px 0 0 0; font-size:13px; color:#856404;">Solicitações de reunião com os pais ou encaminhamentos para a coordenação:</p>
+                    ${renderItensPendentes(pendentesCoord)}
                 </div>`;
             }
         }
@@ -1569,7 +1589,8 @@ async function gerarAlertaCritico() {
                 htmlEnc += `
                 <div style="background:#e8f5e9; border-left:6px solid #2e7d32; padding:15px; border-radius:8px; margin-bottom:15px;">
                     <h3 style="margin:0; color:#1b5e20;">🧠 Encaminhamentos para Equipe PAS (${encaminhamentosPAS.length})</h3>
-                    <p style="margin:5px 0 0 0; font-size:13px;">Existem ocorrências encaminhadas especificamente para acompanhamento da Equipe PAS.</p>
+                    <p style="margin:5px 0 0 0; font-size:13px; color:#1b5e20;">Ocorrências encaminhadas especificamente para acompanhamento da Equipe PAS:</p>
+                    ${renderItensPendentes(encaminhamentosPAS)}
                 </div>`;
             }
         }
@@ -1586,6 +1607,7 @@ async function gerarAlertaCritico() {
         document.getElementById('graficoPizzaTratativas').innerHTML = renderPizza(contTratativas, "Ações da Gestão");
 
         window.detalheGlobal = detalheTurmas;
+        window.ultimoResultadoConsulta = data; // Permite abrir o formulário de edição direto pelo botão "Tratar / Ver"
     } catch (e) { 
         console.error(e);
         alert("Erro ao carregar Dashboard. Tente novamente."); 
