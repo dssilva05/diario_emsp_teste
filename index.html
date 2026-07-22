@@ -1550,22 +1550,27 @@ async function gerarAlertaCritico() {
 
         // Função auxiliar interna para gerar os cards das ocorrências pendentes
         const renderItensPendentes = (lista) => {
-            let h = `<div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">`;
-            lista.forEach(r => {
-                h += `
-                <div style="background:white; padding:10px; border-radius:6px; border:1px solid #ddd; color:#333; font-size:13px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                        <strong>👤 ${r[4]} (${r[3]})</strong>
-                        <button onclick="prepararEdicao('${r[0]}', true)" style="background:#1976d2; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">
-                            🛠️ Tratar / Ver
-                        </button>
-                    </div>
-                    <small style="color:#666;">📅 ${r[1]} | ✍️ ${r[2]}</small>
-                    <p style="margin:5px 0 0 0; font-size:13px; color:#444;">${r[5]}</p>
-                </div>`;
-            });
-            return h + `</div>`;
-        };
+    let h = `<div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">`;
+    lista.forEach(r => {
+        h += `
+        <div style="background:white; padding:10px; border-radius:6px; border:1px solid #ddd; color:#333; font-size:13px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                <!-- 🟢 NOME CLICÁVEL AQUI -->
+                <strong style="color:var(--blue); cursor:pointer; text-decoration:underline;" 
+                        onclick="irParaConsultaDireta('${r[4]}', '${r[3]}')">
+                    👤 ${r[4]} (${r[3]})
+                </strong>
+                
+                <button onclick="prepararEdicao('${r[0]}', true)" style="background:#1976d2; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">
+                    🛠️ Tratar / Ver
+                </button>
+            </div>
+            <small style="color:#666;">📅 ${r[1]} | ✍️ ${r[2]}</small>
+            <p style="margin:5px 0 0 0; font-size:13px; color:#444;">${r[5]}</p>
+        </div>`;
+    });
+    return h + `</div>`;
+};
 
         // Alerta para Coordenação / Direção
         if (cargoLogado === "Diretor") { 
